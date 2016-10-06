@@ -1,10 +1,9 @@
 //
-// This sketch pretends to be a keyboard and prints a stored password by pressing a button. Furthermore you can login/logout by registered RFID-Tag. 
-// There are 3 commands available to administer the password that is stored in EEPROM at address 0.
+// This sketch pretends to be a keyboard and prints a stored password by pressing a button. Furthermore you can login/logout by registered fingerprints. 
+// There are 4 commands available to administer the user and password.
 // 
 // Author: Ming-Che Lee <ming-che.lee@gmx.ch
-// Date: 2016-10-05
-// Version: 0.1
+//
 // Licence: You may use, alternate and re-distribute it as you wish - it is complete free without any warranty. Use at own risk!
 // 
 

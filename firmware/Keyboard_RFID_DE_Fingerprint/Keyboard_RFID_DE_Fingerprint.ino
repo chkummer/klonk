@@ -10,12 +10,16 @@
 #include <SPI.h>
 #include <Keyboard.h>
 #include <EEPROM.h>
+#include <Adafruit_NeoPixel.h>
 #include <Adafruit_Fingerprint.h>
 #include "usToDE.h"
 
 #define OLED 5
+#define NUMPIXELS 1
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, OLED, NEO_GRB + NEO_KHZ800);
 int getFingerprintIDez(), fingerID = 0;
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&Serial1);
+
 
 String entryTAG, serialString = "", serialString2 = "", newPWD = "", cmpPWD = "", replySave = "", PW, myUSER;
 byte LOCK = 1, i;
@@ -196,17 +200,19 @@ int getFingerprintIDez() {
 
 void setup()
 {
-  pinMode(buttonPin, INPUT);
-  digitalWrite(buttonPin, HIGH);
-  pinMode(OLED, OUTPUT);
-  digitalWrite(OLED, LOW);
-  
-  randomSeed(analogRead(0));
-
   SPI.begin();
+  pixels.begin();
   Keyboard.begin();
   Serial.begin(9600);
   finger.begin(57600);
+
+  pixels.setPixelColor(0, pixels.Color(0, 255, 0));
+  pixels.show();
+  
+  pinMode(buttonPin, INPUT);
+  digitalWrite(buttonPin, HIGH);
+  
+  randomSeed(analogRead(0));
     
   if (finger.verifyPassword())
   {
@@ -379,7 +385,9 @@ void loop()
 
   if ( myUSER == "FFFFFFFFFFFFFFFFFFFF" && PW == "FFFFFFFFFFFFFFFFFFFF" )
   {
-    digitalWrite(OLED, LOW);
+    pixels.setPixelColor(0, pixels.Color(0, 0, 255));
+    pixels.show();
+    
     while (serialString2 != "go\r\n")
     {
       delay (1000);
@@ -398,7 +406,9 @@ void loop()
   if ( myUSER == "FFFFFFFFFFFFFFFFFFFF" )
   {
     delay(2000);
-    digitalWrite(OLED, LOW);
+    pixels.setPixelColor(0, pixels.Color(0, 0, 255));
+    pixels.show();
+    
     Serial.println("Init sequence started");
     Serial.println("=====================");
     Serial.println("Please enter new user: ");
@@ -412,8 +422,9 @@ void loop()
     if ( chgPW() == true )
     {
       LOCK = 0;
-      digitalWrite(OLED, HIGH);
-
+      pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+      pixels.show();
+      
       Serial.println("Init seq. done - your user and passwd are set.\n");
       Serial.println("Type 'help' for admin commands\n");
       delay(1300);
@@ -431,7 +442,9 @@ void loop()
     if ( LOCK == 1) 
     { 
       LOCK = 0; 
-      digitalWrite(OLED, HIGH);
+      pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+      pixels.show();
+      
       // CTRL-ALT-DEL:
       Keyboard.press(KEY_LEFT_CTRL);
       Keyboard.press(KEY_LEFT_ALT);
@@ -445,7 +458,9 @@ void loop()
     else 
     { 
       LOCK = 1; 
-      digitalWrite(OLED, LOW);
+      pixels.setPixelColor(0, pixels.Color(0, 255, 0));
+      pixels.show();
+      
       // CTRL-ALT-DEL:
       Keyboard.press(KEY_LEFT_CTRL);
       Keyboard.press(KEY_LEFT_ALT);

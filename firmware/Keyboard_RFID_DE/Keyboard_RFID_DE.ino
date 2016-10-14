@@ -11,12 +11,15 @@
 #include <MFRC522.h>
 #include <Keyboard.h>
 #include <EEPROM.h>
+#include <Adafruit_NeoPixel.h>
 #include "usToDE.h"
 
 #define SDA_PIN 2
 #define RST_PIN 3
 #define OLED 5
+#define NUMPIXELS 1
 MFRC522 mfrc522(SDA_PIN, RST_PIN);
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, OLED, NEO_GRB + NEO_KHZ800);
 
 String entryTAG, serialString = "", serialString2 = "", newPWD = "", cmpPWD = "", replySave = "", PW, myUSER, myTAG;
 byte LOCK = 1, i;
@@ -185,12 +188,14 @@ void prtKbdStrg(String tmpStrg)
 void setup()
 {
   SPI.begin();
+  pixels.begin();
   mfrc522.PCD_Init();
 
   pinMode(buttonPin, INPUT);
   digitalWrite(buttonPin, HIGH);
-  pinMode(OLED, OUTPUT);
-  digitalWrite(OLED, LOW);
+
+  pixels.setPixelColor(0, pixels.Color(0, 255, 0));
+  pixels.show();
   
   Keyboard.begin();
   Serial.begin(9600);
@@ -358,7 +363,9 @@ void loop()
 
   if ( myTAG == "FFFFFFFF" && myUSER == "FFFFFFFFFFFFFFFFFFFF" && PW == "FFFFFFFFFFFFFFFFFFFF" )
   {
-    digitalWrite(OLED, LOW);
+    pixels.setPixelColor(0, pixels.Color(0, 0, 255));
+    pixels.show();
+  
     while (serialString2 != "go\r\n")
     {
       delay (1000);
@@ -377,7 +384,9 @@ void loop()
   if ( myTAG == "FFFFFFFF" )
   {
     delay(2000);
-    digitalWrite(OLED, LOW);
+    pixels.setPixelColor(0, pixels.Color(0, 0, 255));
+    pixels.show();
+  
     Serial.println("Init sequence started");
     Serial.println("=====================");
     Serial.println("Please enter new user: ");
@@ -419,8 +428,9 @@ void loop()
       myTAG = "";
       myTAG = saveStrgEEP(entryTAG,25);
       LOCK = 0;
-      digitalWrite(OLED, HIGH);
-
+      pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+      pixels.show();
+      
       Serial.print("Registered TAG: ");
       Serial.println(myTAG);
       Serial.println();
@@ -455,7 +465,9 @@ void loop()
     if ( LOCK == 1) 
     { 
       LOCK = 0; 
-      digitalWrite(OLED, HIGH);
+      pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+      pixels.show();
+      
       // CTRL-ALT-DEL:
       Keyboard.press(KEY_LEFT_CTRL);
       Keyboard.press(KEY_LEFT_ALT);
@@ -469,7 +481,9 @@ void loop()
     else 
     { 
       LOCK = 1; 
-      digitalWrite(OLED, LOW);
+      pixels.setPixelColor(0, pixels.Color(0, 255, 0));
+      pixels.show();
+      
       // CTRL-ALT-DEL:
       Keyboard.press(KEY_LEFT_CTRL);
       Keyboard.press(KEY_LEFT_ALT);

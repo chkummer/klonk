@@ -7,7 +7,6 @@
 // Licence: You may use, alternate and re-distribute it as you wish - it is complete free without any warranty. Use at own risk!
 // 
 
-#include <SPI.h>
 #include <Keyboard.h>
 #include <EEPROM.h>
 #include <Adafruit_NeoPixel.h>
@@ -200,7 +199,7 @@ int getFingerprintIDez() {
 
 void setup()
 {
-  SPI.begin();
+  
   pixels.begin();
   Keyboard.begin();
   Serial.begin(9600);
@@ -234,7 +233,8 @@ void setup()
 
 void loop()
 {
-  
+ while(1)
+ {
   buttonState = digitalRead(buttonPin);
   if (buttonState != lastButtonState) 
   {
@@ -472,5 +472,6 @@ void loop()
     }
   delay(50);
   }
+ }
 }
 

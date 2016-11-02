@@ -193,19 +193,19 @@ void prtKbdStrg(String tmpStrg)
 
 void stat_led_red()
 {
-  pixels.setPixelColor(0, pixels.Color(0, 255, 0));
+  pixels.setPixelColor(0, pixels.Color(0, 25, 0));
   pixels.show();
 }
 
 void stat_led_green()
 {
-  pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+  pixels.setPixelColor(0, pixels.Color(25, 0, 0));
   pixels.show();
 }
 
 void stat_led_blue()
 {
-  pixels.setPixelColor(0, pixels.Color(0, 0, 255));
+  pixels.setPixelColor(0, pixels.Color(0, 0, 25));
   pixels.show();
 }
 

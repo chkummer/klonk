@@ -203,19 +203,19 @@ int getFingerprintIDez() {
 
 void stat_led_red()
 {
-  pixels.setPixelColor(0, pixels.Color(0, 255, 0));
+  pixels.setPixelColor(0, pixels.Color(0, 25, 0));
   pixels.show();
 }
 
 void stat_led_green()
 {
-  pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+  pixels.setPixelColor(0, pixels.Color(25, 0, 0));
   pixels.show();
 }
 
 void stat_led_blue()
 {
-  pixels.setPixelColor(0, pixels.Color(0, 0, 255));
+  pixels.setPixelColor(0, pixels.Color(0, 0, 25));
   pixels.show();
 }
 
@@ -471,7 +471,7 @@ void loop()
     Serial.println("passwd   Change password");
     Serial.println("pwgen    Generate random password");
     Serial.println("passwin  Change windows password");
-    Serial.println("reset    Reset user, password and tag");
+    Serial.println("reset    Reset user and password");
     Serial.println();
     delay(100);
     //Serial.println("\nThe commands are only available in authenticated mode - except help, reset and upload!");
@@ -489,7 +489,7 @@ void loop()
     while (serialString2 != "go\r\n")
     {
       delay (1000);
-      Serial.println("Please enter \"go\" to init user and passowrd");
+      Serial.println("Please enter \"go\" to init user and password");
       while (Serial.available() > 0) 
       {
         // read incoming serial data:

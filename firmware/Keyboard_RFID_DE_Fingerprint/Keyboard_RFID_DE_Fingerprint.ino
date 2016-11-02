@@ -470,7 +470,7 @@ void loop()
       delay(1500);
       Keyboard.write(KEY_RETURN);
     }
-  delay(50);
+    delay(50);
   }
  }
 }

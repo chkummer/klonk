@@ -19,7 +19,7 @@ Exported PCB view
 Exported Schematics view
 
 ###klonk_copper.gtl / klonk_drill.txt
-Exported Gerber (RS-274X) files 
+Exported Gerber (RS-274X) files. You may use them to order your fabricated PCB or if you prefer to mill your PCB yourself to generate gcode on: http://rapid-pcb.com/ . If you like to lear more about PCB milling start with this intro: http://blog.nyl.io/hello-world-milling-pcbs/
 
 ##Bill of Materials
 * Pro Micro1: Sparkfun Pro Micro input voltage 5.0 V; Prozessor MK20DX256; Variante variant 2; i/o voltage 5.0 V (or compatible)

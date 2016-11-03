@@ -7,7 +7,7 @@ Authentication:
 - RFID/NFC
 - Fingerprint sensor
 
-Admiminstration:
+Administration:
 - USB - via serial terminal application e.g. HypeTerminal, Arduino IDE serial monitor,...
 - Bluetooth: via bluetooth terminal app of your cell phone
 

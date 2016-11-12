@@ -28,6 +28,3 @@ Exported Gerber (RS-274X) files. You may use them to order your fabricated PCB o
 * LED1: Green (565nm) LED Paket 5 mm THT
 * R1: 220Ω Resistor THT Tolerance ±5%
 * Button switch: 2 pin
-* Button switch: 2 pin
-* Button switch: 2 pin
-* Button switch: 2 pin

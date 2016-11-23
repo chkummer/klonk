@@ -199,7 +199,8 @@ void setup()
   
   Keyboard.begin();
   Serial.begin(9600);
-  
+  Serial.println("klonk - Type \"help\" for available commands");
+    
   randomSeed(analogRead(0));
   
   eeprom_read_string(0, buf, BUFSIZE);

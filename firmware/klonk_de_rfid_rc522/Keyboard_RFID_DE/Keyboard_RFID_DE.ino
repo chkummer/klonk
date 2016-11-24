@@ -293,22 +293,20 @@ void loop()
     {
       PosPW = 75;
       PosUSER = 125;
-      eeprom_read_string(PosPW, buf, BUFSIZE);
-      PW = buf;
-      eeprom_read_string(PosUSER, buf, BUFSIZE);
-      myUSER = buf;
       stat_led_orange();
     }
     else
     {
       PosPW = 0;
       PosUSER = 50;
-      eeprom_read_string(PosPW, buf, BUFSIZE);
-      PW = buf;
-      eeprom_read_string(PosUSER, buf, BUFSIZE);
-      myUSER = buf;
       stat_led_green();
     }
+    
+    eeprom_read_string(PosPW, buf, BUFSIZE);
+    PW = buf;
+    eeprom_read_string(PosUSER, buf, BUFSIZE);
+    myUSER = buf;
+
     delay(500);
   }
   

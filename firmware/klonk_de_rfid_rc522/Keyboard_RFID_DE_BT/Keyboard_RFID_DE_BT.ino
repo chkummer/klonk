@@ -300,7 +300,7 @@ void setup()
   
   Keyboard.begin();
   Serial.begin(9600);
-  Serial.println("Klonk - Type \"help\" for available commands");
+  Serial.println("klonk - Type \"help\" for available commands");
   BTserial.begin(38400);
 
   randomSeed(analogRead(0));

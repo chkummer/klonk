@@ -196,6 +196,7 @@ void setup()
 {
 
   Serial.begin(9600);
+  Serial.println("klonk - Type \"help\" for available commands");
   
   nfc.begin();
   uint32_t versiondata = nfc.getFirmwareVersion();

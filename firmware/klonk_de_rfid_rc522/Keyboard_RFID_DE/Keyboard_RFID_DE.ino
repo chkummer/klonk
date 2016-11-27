@@ -144,7 +144,8 @@ String readSerialStrg ()
 
 boolean def_USER()
 {
-  eeprom_read_string(0, buf, BUFSIZE);
+  PosPW = 0;
+  eeprom_read_string(PosPW, buf, BUFSIZE);
   PW = buf;
   eeprom_read_string(50, buf, BUFSIZE);
   myUSER = buf;
@@ -307,6 +308,7 @@ void loop()
     eeprom_read_string(PosUSER, buf, BUFSIZE);
     myUSER = buf;
 
+    digitalWrite(buttonSel, HIGH);
     delay(500);
   }
   

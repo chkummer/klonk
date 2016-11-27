@@ -4,31 +4,40 @@ This version of klonk is using Mifare RFID-RC522 sensor for authentication. Auth
 If authentication is successful klonk is unlocked and it will print "CNTRL-ALT-DEL" and stored password to unlock the Windows Desktop. To lock the Windows Desktop 
 just hold the registered RFID-tag again close to the RFID-RC522 sensor. klonk will be locked and print "CNTRL-ALT-DEL" and "RETURN" to lock the Windows Desktop. 
 
-Once authenticated by registerd RFID-Tag the stored password can be printed by pressing a button. 
+There are two klonk buttons available:
 
-Pressing button short -> print stored password
-Pressing and holding button longer than 1 second -> print stored user and password
+* select button: allows to select which user is active
+* password button: prints stored password or user/password of active user
+
+The buttons only work when klonk is in unlocked mode.
+
+Once authenticated by registerd RFID-Tag the stored password can be printed by pressing the password button:
+
+* Pressing button short -> print stored password
+* Pressing and holding button longer than 1 second -> print stored user and password
 
 A RGB-LED shows the operation status of klonk:
 
 * RED: klonk is locked, authentication needed to unlock - printing of password or user/password is not working
-* GREEN: klonk is unlocked, authenticated - printing of password or user/password by pressing button is working
-* BLUE: klonk is in init mode e.g. initital setup of user, password and RFID-Tag or resetting passwords
+* GREEN/ORANGE: klonk is unlocked, authenticated - printing of password or user/password by pressing the password button is working
+* BLUE: klonk is in init mode e.g. initital setup of user, password and RFID-Tag
 * BLINK: klonk is not paired with your cell phone - only for bluetooth enabled version
 
-There are commands available for administering klonk:
+GREEN shows login user is active and ORANGE shows second user is active.
 
-* help        list of commands
-* passwd      change password
-* pwgen       generate random password
-* passwin     change windows password
-* reset       reset user, password and register RFID-tag
+These commands are available for administering klonk:
 
-passwd, pwgen and passwin are only working when klonk is unlocked. help and reset work in lock and unlocked mode. You have to enter your stored password before you can use reset command.
+* help - list of commands
+* passwd - change password
+* pwgen - generate random password
+* passwin - change windows password
+* reset - reset user, password and register RFID-tag
+
+passwd, pwgen and passwin are only working when klonk is unlocked. help and reset work in locked and unlocked mode. You have to enter your stored password of the login user before you can use reset command.
 
 You can enter the above commands via serial terminal application or bluetooth terminal app:
 
-* USB - via serial terminal application e.g. HypeTerminal, Arduino IDE serial monitor,...
+* USB: via serial terminal application e.g. HypeTerminal, Arduino IDE serial monitor,...
 * Bluetooth: via bluetooth terminal app of your cell phone - only for bluetooth enabled version
 
 Bluetooth enabled klonk version also offers an automatic Windows Desktop logout. klonk and your cell phone is paired by building a connection with your bluetooth terminal app. klonk

@@ -44,7 +44,7 @@ The following directories contain firmware for the described versions of klonk:
 * Pro Micro1: Sparkfun Pro Micro input voltage 5.0 V; Prozessor MK20DX256; Variante variant 2; i/o voltage 5.0 V (or compatible)
 * RFID-Module: NFC/RFID-PN532
 * 3.3V input for RFID-Module: D1 + D2i: Rectifier Diode Paket 300 mil THT Typ 1N4001 or voltage divider using 2 resistors or module MCP1700
-* RGB-LED: APA-106, 5V
+* RGB-LED: APA-106, 8mm, 5V
 * Button: tactile push button switch
 * Bluetooth: HC-05, voltage divider for HC-05 RX -> Pro Micro TX.
 

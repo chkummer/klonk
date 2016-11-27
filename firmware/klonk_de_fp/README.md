@@ -43,7 +43,7 @@ The following directories contain firmware for the described versions of klonk:
 #Bill of Materials
 * Pro Micro1: Sparkfun Pro Micro input voltage 5.0 V; Prozessor MK20DX256; Variante variant 2; i/o voltage 5.0 V (or compatible)
 * Fingerprint: optical fingerprint sensor module for Arduino, 5V
-* RGB-LED: APA-106, 5V
+* RGB-LED: APA-106, 8mm, 5V
 * Button: tactile push button switch
 * Bluetooth: HC-05, voltage divider for HC-05 RX -> Pro Micro TX.
 

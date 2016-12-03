@@ -11,15 +11,15 @@ Fritzing Project File. Fritzing is an open-source hardware initiative that makes
 
 ###klonk_rfid_rc522_green_led_breadboard.(png|pdf)
 Exported breadboard view
-![Breadboard View]klonk_rfid_rc522_green_led_breadboard.png
+![Breadboard View](klonk_rfid_rc522_green_led_breadboard.png)
 
 ###klonk_rfid_rc522_green_led_schematics.(png|pdf)
 Exported Schematics view
-![Schematics View]klonk_rfid_rc522_green_led_schematics.png
+![Schematics View](klonk_rfid_rc522_green_led_schematics.png)
 
 ###klonk_rfid_rc522_green_led_pcb.(png|pdf)
 Exported PCB view
-![PCB View]klonk_rfid_rc522_green_led_pcb.png
+![PCB View](klonk_rfid_rc522_green_led_pcb.png)
 
 ##Bill of Materials
 * Pro Micro1: Sparkfun Pro Micro input voltage 5.0 V; Prozessor MK20DX256; Variante variant 2; i/o voltage 5.0 V (or compatible)

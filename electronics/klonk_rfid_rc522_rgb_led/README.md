@@ -9,17 +9,17 @@ One need to add these Parts to the Library:
 ###klonk_rfid_rc522_rgb_led.fzz
 Fritzing Project File. Fritzing is an open-source hardware initiative that makes electronics accessible as a creative material for anyone. You may download the software form: http://fritzing.org/
 
-###klonk_rfid_rc522_rgb_led_breadboard.png / klonk_rfid_rc522_rgb_led_breadboard.pdf
+###klonk_rfid_rc522_rgb_led_breadboard.(png|pdf)
 Exported breadboard view
-![Breadboard View]klonk_rfid_rc522_rgb_led_breadboard.png
+![Breadboard View](klonk_rfid_rc522_rgb_led_breadboard.png)
 
-###klonk_rfid_rc522_rgb_led_schematics.png / klonk_rfid_rc522_rgb_led_schematics.pdf
+###klonk_rfid_rc522_rgb_led_schematics.(png|pdf)
 Exported Schematics view
-![Schematics View]klonk_rfid_rc522_rgb_led_schematics.png
+![Schematics View](klonk_rfid_rc522_rgb_led_schematics.png)
 
-###klonk_rfid_rc522_rgb_led_pcb.png / klonk_rfid_rc522_rgb_led_pcb.png
+###klonk_rfid_rc522_rgb_led_pcb.(png|pdf)
 Exported PCB view
-![PCB View]klonk_rfid_rc522_rgb_led_pcb.png
+![PCB View](klonk_rfid_rc522_rgb_led_pcb.png)
 
 
 ##Bill of Materials

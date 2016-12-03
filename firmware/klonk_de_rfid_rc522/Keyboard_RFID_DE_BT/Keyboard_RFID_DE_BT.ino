@@ -4,7 +4,7 @@
 // 
 // Author: Ming-Che Lee <ming-che.lee@gmx.ch
 //
-// Licence: You may use, alternate and re-distribute it as you wish - it is complete free without any warranty. Use at own risk!
+// Licence: You may use, alternate and re-distribute it as you wish. Use at own risk!
 // 
 
 #include <SPI.h>
@@ -25,7 +25,7 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, OLED, NEO_GRB + NEO_KHZ8
 SoftwareSerial BTserial(9, 10);
 
 String entryTAG, serialString = "", serialString2 = "", newPWD = "", cmpPWD = "", replySave = "", PW, myUSER, myTAG;
-byte LOCK = 1, i;
+byte LOCK = 1, i, PosPW = 0, PosTAG = 25, PosUSER = 50;
 const byte BTstate = 6;
 boolean BTconnected = false, LBTconnected = false;
 
@@ -40,13 +40,14 @@ const int BUFSIZE = 25;
 char buf[BUFSIZE];
 
 const byte buttonPin = 4;
+const byte buttonSel = 7;
 byte buttonState = 0; 
 byte lastButtonState = 0;
 int startPressed = 0;
 int endPressed = 0;
 int timeHold = 0;    
 int timeReleased = 0;
-unsigned long previousMillis = 0, interval = 10000;
+unsigned long previousMillis = 0, interval = 5000;
 
 boolean eeprom_is_addr_ok(int addr) 
 {
@@ -147,6 +148,26 @@ String readSerialStrg ()
   return tmpStrg;
 }
 
+boolean def_USER()
+{
+  PosPW = 0;
+  eeprom_read_string(PosPW, buf, BUFSIZE);
+  PW = buf;
+  eeprom_read_string(50, buf, BUFSIZE);
+  myUSER = buf;
+}
+
+boolean setUSER (byte pos, String user)
+{
+  Serial.println("Please enter new "+user+" user: ");
+  replySave = readSerialStrg();
+  myUSER = "";
+  myUSER = saveStrgEEP(replySave,pos);
+  Serial.print("New User ");
+  Serial.print(myUSER);
+  Serial.println(" is set\n");
+}
+
 boolean chgPW ()
 {
   newPWD = "123456789012345618901";
@@ -167,10 +188,10 @@ boolean chgPW ()
   if (newPWD == cmpPWD)
   {
     PW = "";
-    PW = saveStrgEEP(newPWD,0);
+    PW = saveStrgEEP(newPWD,PosPW);
     Serial.print("New password ");
     Serial.print(newPWD);
-    Serial.println(" is saved - please test before use\n");
+    Serial.println(" is saved\n");
     return true;
   }
   else
@@ -197,6 +218,12 @@ void stat_led_red()
   pixels.show();
 }
 
+void stat_led_orange()
+{
+  pixels.setPixelColor(0, pixels.Color(35, 75, 0));
+  pixels.show();
+}
+
 void stat_led_green()
 {
   pixels.setPixelColor(0, pixels.Color(25, 0, 0));
@@ -209,9 +236,23 @@ void stat_led_blue()
   pixels.show();
 }
 
+void show_user_led ()
+{
+  switch (PosPW)
+  {
+    case 0:
+      stat_led_green();
+      break;
+    case 75:
+      stat_led_orange();
+      break;
+  }
+}
+
 void logout()
 {
   stat_led_red();
+  def_USER();
   
   // CTRL-ALT-DEL:
   Keyboard.press(KEY_LEFT_CTRL);
@@ -226,6 +267,7 @@ void logout()
 void login()
 {
   stat_led_green();
+  def_USER();
       
   // CTRL-ALT-DEL:
   Keyboard.press(KEY_LEFT_CTRL);
@@ -251,7 +293,7 @@ void BT_tracker()
     }
     else
     {
-      stat_led_green();
+      show_user_led();
     }
     delay(100);
   }
@@ -271,7 +313,7 @@ void BT_tracker()
       }
       else
       {
-        stat_led_green();
+        show_user_led();
       }
     }
     delay(100);
@@ -294,7 +336,9 @@ void setup()
   delay(5000);
 
   pinMode(buttonPin, INPUT);
+  pinMode(buttonSel, INPUT);
   digitalWrite(buttonPin, HIGH);
+  digitalWrite(buttonSel, HIGH);
 
   stat_led_red();
   
@@ -305,16 +349,37 @@ void setup()
 
   randomSeed(analogRead(0));
  
-  eeprom_read_string(0, buf, BUFSIZE);
-  PW = buf;
-  eeprom_read_string(25, buf, BUFSIZE);
+  eeprom_read_string(PosTAG, buf, BUFSIZE);
   myTAG = buf;
-  eeprom_read_string(50, buf, BUFSIZE);
-  myUSER = buf;
+  def_USER();
 }
 
 void loop()
 {
+
+  if ( digitalRead(buttonSel) == LOW && myUSER != "FFFFFFFFFFFFFFFFFFFF" && LOCK == 0 )
+  {
+    switch (PosPW)
+    {
+      case 0:
+        PosPW = 75;
+        PosUSER = 125;
+        stat_led_orange();
+        break;
+      case 75:
+        PosPW = 0;
+        PosUSER = 50;
+        stat_led_green();  
+    }
+    
+    eeprom_read_string(PosPW, buf, BUFSIZE);
+    PW = buf;
+    eeprom_read_string(PosUSER, buf, BUFSIZE);
+    myUSER = buf;
+
+    digitalWrite(buttonSel, HIGH);
+    delay(500);
+  }
   
   buttonState = digitalRead(buttonPin);
   if (buttonState != lastButtonState) 
@@ -400,7 +465,7 @@ void loop()
     if (replySave == "y")
     {
       PW = "";
-      PW = saveStrgEEP(randPW,0);
+      PW = saveStrgEEP(randPW,PosPW);
       Serial.println("Old password replaced by generated password\n");
     }
     else
@@ -431,6 +496,9 @@ void loop()
 
   if ( serialString == "reset\r\n")
   {
+    stat_led_green();
+    def_USER();
+    
     Serial.println("Reset user, password and RF-Tag");
     Serial.println("===============================");
     Serial.println("Please enter password: ");
@@ -443,7 +511,7 @@ void loop()
     }
     else
     {
-      Serial.println("Wrong password - reset not started, please try again\n");
+      Serial.println("Wrong password - reset not started\n");
     }
   }
 
@@ -490,19 +558,13 @@ void loop()
   
     Serial.println("Init sequence started");
     Serial.println("=====================");
-    Serial.println("Please enter new user: ");
-    replySave = readSerialStrg();
-    myUSER = "";
-    myUSER = saveStrgEEP(replySave,50);
-    Serial.print("New User ");
-    Serial.print(myUSER);
-    Serial.println(" is set\n");
-    
+    setUSER(50,"login");
+    PosPW = 0;    
         
     if ( chgPW() == true)
     {
       delay(1000);
-      Serial.println("Hold your RFID-Tag close to RFID-Receiver for at least one second to register...");
+      Serial.println("Hold your RFID-Tag close to RFID-Receiver to register...");
 
       i = 0;
       while ( i == 0 )
@@ -535,7 +597,24 @@ void loop()
       Serial.println(myTAG);
       Serial.println();
       Serial.println("Init seq. done - your user and passwd are set and RFID-TAG is registered.\n");
-      //Serial.println("Type 'help' for admin commands\n");
+      
+      Serial.println("Set 2nd user? <y/n>");
+      replySave = readSerialStrg();
+        
+      if (replySave == "y")
+      {
+        stat_led_orange();
+        setUSER(125,"second");
+        PosPW = 75;
+        chgPW();
+      }
+      else
+      {
+        Serial.println("-> 2nd user not set\n");
+      }
+
+      stat_led_green();
+      def_USER();
       delay(1300);
     }
     else

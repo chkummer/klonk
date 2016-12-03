@@ -4,7 +4,7 @@
 // 
 // Author: Ming-Che Lee <ming-che.lee@gmx.ch
 //
-// Licence: You may use, alternate and re-distribute it as you wish - it is complete free without any warranty. Use at own risk!
+// Licence: You may use, alternate and re-distribute it as you wish. Use at own risk!
 // 
 
 #include <Keyboard.h>
@@ -22,7 +22,7 @@ Adafruit_Fingerprint finger = Adafruit_Fingerprint(&Serial1);
 SoftwareSerial BTserial(9, 10);
 
 String entryTAG, serialString = "", serialString2 = "", newPWD = "", cmpPWD = "", replySave = "", PW, myUSER;
-byte LOCK = 1, i;
+byte LOCK = 1, i, PosPW = 0, PosTAG = 25, PosUSER = 50;
 const byte BTstate = 6;
 boolean BTconnected = false, LBTconnected = false;
 unsigned long previousMillis = 0, interval = 5000;
@@ -38,6 +38,7 @@ const int BUFSIZE = 25;
 char buf[BUFSIZE];
 
 const byte buttonPin = 4;
+const byte buttonSel = 7;
 byte buttonState = 0; 
 byte lastButtonState = 0;
 int startPressed = 0;
@@ -144,6 +145,26 @@ String readSerialStrg ()
   return tmpStrg;
 }
 
+boolean def_USER()
+{
+  PosPW = 0;
+  eeprom_read_string(PosPW, buf, BUFSIZE);
+  PW = buf;
+  eeprom_read_string(50, buf, BUFSIZE);
+  myUSER = buf;
+}
+
+boolean setUSER (byte pos, String user)
+{
+  Serial.println("Please enter new "+user+" user: ");
+  replySave = readSerialStrg();
+  myUSER = "";
+  myUSER = saveStrgEEP(replySave,pos);
+  Serial.print("New User ");
+  Serial.print(myUSER);
+  Serial.println(" is set\n");
+}
+
 boolean chgPW ()
 {
   newPWD = "123456789012345618901";
@@ -164,10 +185,10 @@ boolean chgPW ()
   if (newPWD == cmpPWD)
   {
     PW = "";
-    PW = saveStrgEEP(newPWD,0);
+    PW = saveStrgEEP(newPWD,PosPW);
     Serial.print("New password ");
     Serial.print(newPWD);
-    Serial.println(" is saved - please test before use\n");
+    Serial.println(" is saved\n");
     return true;
   }
   else
@@ -188,22 +209,15 @@ void prtKbdStrg(String tmpStrg)
   }
 }
 
-int getFingerprintIDez() {
-  uint8_t p = finger.getImage();
-  if (p != FINGERPRINT_OK)  return -1;
-
-  p = finger.image2Tz();
-  if (p != FINGERPRINT_OK)  return -1;
-
-  p = finger.fingerFastSearch();
-  if (p != FINGERPRINT_OK)  return -1;
-  
-  return finger.fingerID; 
-}
-
 void stat_led_red()
 {
   pixels.setPixelColor(0, pixels.Color(0, 25, 0));
+  pixels.show();
+}
+
+void stat_led_orange()
+{
+  pixels.setPixelColor(0, pixels.Color(35, 75, 0));
   pixels.show();
 }
 
@@ -219,9 +233,23 @@ void stat_led_blue()
   pixels.show();
 }
 
+void show_user_led ()
+{
+  switch (PosPW)
+  {
+    case 0:
+      stat_led_green();
+      break;
+    case 75:
+      stat_led_orange();
+      break;
+  }
+}
+
 void logout()
 {
   stat_led_red();
+  def_USER();
   
   // CTRL-ALT-DEL:
   Keyboard.press(KEY_LEFT_CTRL);
@@ -236,6 +264,7 @@ void logout()
 void login()
 {
   stat_led_green();
+  def_USER();
       
   // CTRL-ALT-DEL:
   Keyboard.press(KEY_LEFT_CTRL);
@@ -246,6 +275,19 @@ void login()
   delay(1000);
   Keyboard.print(PW);
   Keyboard.write(KEY_RETURN);
+}
+
+int getFingerprintIDez() {
+  uint8_t p = finger.getImage();
+  if (p != FINGERPRINT_OK)  return -1;
+
+  p = finger.image2Tz();
+  if (p != FINGERPRINT_OK)  return -1;
+
+  p = finger.fingerFastSearch();
+  if (p != FINGERPRINT_OK)  return -1;
+  
+  return finger.fingerID; 
 }
 
 void BT_tracker()
@@ -261,7 +303,7 @@ void BT_tracker()
     }
     else
     {
-      stat_led_green();
+      show_user_led();
     }
   }
   else
@@ -280,7 +322,7 @@ void BT_tracker()
       }
       else
       {
-        stat_led_green();
+        show_user_led();
       }
     }
   }
@@ -300,40 +342,64 @@ void setup()
   pinMode(BTstate, INPUT);   
   delay(5000);
 
+  pinMode(buttonPin, INPUT);
+  pinMode(buttonSel, INPUT);
+  digitalWrite(buttonPin, HIGH);
+  digitalWrite(buttonSel, HIGH);
+
   stat_led_red();
   
-  pinMode(buttonPin, INPUT);
-  digitalWrite(buttonPin, HIGH);
-
   Keyboard.begin();
   Serial.begin(9600);
-  Serial.println("Klonk - Type \"help\" for available commands");
+  Serial.println("klonk - Type \"help\" for commands");
   BTserial.begin(38400);
   
   randomSeed(analogRead(0));
     
   if (finger.verifyPassword())
   {
-    Serial.println("Found fingerprint sensor!");
+    Serial.println("FP sensor OK!");
     Serial.println();
   } 
   else
   {
-    Serial.println("Did not find fingerprint sensor :(");
+    Serial.println("FP sensor NOK");
     Serial.println();
     while (1);
   }
   
-  eeprom_read_string(0, buf, BUFSIZE);
-  PW = buf;
-  eeprom_read_string(50, buf, BUFSIZE);
-  myUSER = buf;
+  def_USER();
 }
 
 void loop()
 {
  while (1)
- {  
+ {
+
+  if ( digitalRead(buttonSel) == LOW && myUSER != "FFFFFFFFFFFFFFFFFFFF" && LOCK == 0 )
+  {
+    if ( PosPW == 0)
+    {
+      PosPW = 75;
+      PosUSER = 125;
+      stat_led_orange();
+    }
+    else
+    {
+      PosPW = 0;
+      PosUSER = 50;
+      stat_led_green();
+    }
+    
+    eeprom_read_string(PosPW, buf, BUFSIZE);
+    PW = buf;
+    eeprom_read_string(PosUSER, buf, BUFSIZE);
+    myUSER = buf;
+
+    digitalWrite(buttonSel, HIGH);
+    delay(500);
+  }
+  
   buttonState = digitalRead(buttonPin);
   if (buttonState != lastButtonState) 
   {
@@ -412,18 +478,18 @@ void loop()
     Serial.println("==========================");
     Serial.print("Generated password: ");
     Serial.println(randPW);
-    Serial.println("Replace old password and save it? <y/n>");
+    Serial.println("Replace old password? <y/n>");
     replySave = readSerialStrg();
     
     if (replySave == "y")
     {
       PW = "";
-      PW = saveStrgEEP(randPW,0);
+      PW = saveStrgEEP(randPW,PosPW);
       Serial.println("Old password replaced by generated password\n");
     }
     else
     {
-      Serial.println("Nothing saved - current password not replaced\n");
+      Serial.println("Old password not replaced\n");
     }
   }
 
@@ -461,7 +527,7 @@ void loop()
     }
     else
     {
-      Serial.println("Wrong password - reset not started, please try again\n");
+      Serial.println("Wrong password - reset not started\n");
     }
   }
 
@@ -508,13 +574,8 @@ void loop()
     
     Serial.println("Init sequence started");
     Serial.println("=====================");
-    Serial.println("Please enter new user: ");
-    replySave = readSerialStrg();
-    myUSER = "";
-    myUSER = saveStrgEEP(replySave,50);
-    Serial.print("New User ");
-    Serial.print(myUSER);
-    Serial.println(" is set\n");
+    setUSER(50,"login");
+    PosPW = 0;
 
     if ( chgPW() == true )
     {
@@ -522,7 +583,25 @@ void loop()
       stat_led_green();
       
       Serial.println("Init seq. done - your user and passwd are set.\n");
-      //Serial.println("Type 'help' for admin commands\n");
+
+      Serial.println("Set 2nd user? <y/n>");
+      replySave = readSerialStrg();
+        
+      if (replySave == "y")
+      {
+        stat_led_orange();
+        setUSER(125,"second");
+        PosPW = 75;
+        chgPW();
+      }
+      else
+      {
+        Serial.println("-> 2nd user not set\n");
+      }
+
+      stat_led_green();
+      def_USER();
+      Serial.println("Type 'help' for admin commands\n");
       delay(1300);
     }
     else

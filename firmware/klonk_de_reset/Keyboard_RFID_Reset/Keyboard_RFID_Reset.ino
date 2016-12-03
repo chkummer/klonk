@@ -113,39 +113,54 @@ void setup()
   Serial.begin(9600);
   delay(2500);
 
-  Serial.println("Resetting password at 0x00, myTAG at 0x25 and myUSER at 0x50");
-  Serial.println("============================================================");
+  Serial.println("Resetting password at 0x00, 0x75; myTAG at 0x25, 0x100; and myUSER at 0x50, 0x125");
+  Serial.println("=================================================================================");
 
-  Serial.println("Resetting password at address 0"); 
+  Serial.println("Resetting password at address 0 and 75"); 
   myString = "FFFFFFFFFFFFFFFFFFFF";
   myString.toCharArray(myStringChar, BUFSIZE); //convert string to char array
   strcpy(buf, myStringChar);
-  eeprom_write_string(0, buf); 
+  eeprom_write_string(0, buf);
+  eeprom_write_string(75, buf); 
   
-  Serial.println("Restting myTAG at address 25"); 
+  Serial.println("Restting myTAG at address 25 and 100"); 
   myString="FFFFFFFF";
   myString.toCharArray(myStringChar, BUFSIZE); //convert string to char array
   strcpy(buf, myStringChar);
-  eeprom_write_string(25, buf); 
+  eeprom_write_string(25, buf);
+  eeprom_write_string(100, buf); 
     
-  Serial.println("Restting myUSR at address 50\n"); 
+  Serial.println("Restting myUSR at address 50 and 125\n"); 
   myString="FFFFFFFFFFFFFFFFFFFF";
   myString.toCharArray(myStringChar, BUFSIZE); //convert string to char array
   strcpy(buf, myStringChar);
-  eeprom_write_string(50, buf); 
+  eeprom_write_string(50, buf);
+  eeprom_write_string(125, buf);
   
   Serial.print("Reading password from address 0: "); 
   eeprom_read_string(0, buf, BUFSIZE);
   PW = buf;
   Serial.println(PW);
-  
+  Serial.print("Reading password from address 75: "); 
+  eeprom_read_string(75, buf, BUFSIZE);
+  PW = buf;
+  Serial.println(PW);
+
   Serial.print("Reading myTAG from address 25: ");
   eeprom_read_string(25, buf, BUFSIZE);
+  myTAG = buf;
+  Serial.println(myTAG);
+  Serial.print("Reading myTAG from address 100: ");
+  eeprom_read_string(100, buf, BUFSIZE);
   myTAG = buf;
   Serial.println(myTAG);
 
   Serial.print("Reading myUSER from address 50: ");
   eeprom_read_string(50, buf, BUFSIZE);
+  myUSER = buf;
+  Serial.println(myUSER);
+  Serial.print("Reading myUSER from address 125: ");
+  eeprom_read_string(125, buf, BUFSIZE);
   myUSER = buf;
   Serial.println(myUSER);
 }

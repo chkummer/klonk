@@ -4,7 +4,7 @@
 // 
 // Author: Ming-Che Lee <ming-che.lee@gmx.ch
 //
-// Licence: You may use, alternate and re-distribute it as you wish - it is complete free without any warranty. Use at own risk!
+// Licence: You may use, alternate and re-distribute it as you wish. Use at own risk!
 // 
 
 #include <Keyboard.h>
@@ -25,7 +25,7 @@ Adafruit_PN532 nfc(PN532_SCK, PN532_MISO, PN532_MOSI, PN532_SS);
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, OLED, NEO_GRB + NEO_KHZ800);
 
 String entryTAG, serialString = "", serialString2 = "", newPWD = "", cmpPWD = "", replySave = "", PW, myUSER, myTAG;
-byte LOCK = 1, i;
+byte LOCK = 1, i, PosPW = 0, PosTAG = 25, PosUSER = 50;
 
 byte randomValue;
 char randPW[25], inChar;
@@ -37,6 +37,7 @@ const int BUFSIZE = 25;
 char buf[BUFSIZE];
 
 const byte buttonPin = 4;
+const byte buttonSel = 7;
 byte buttonState = 0; 
 byte lastButtonState = 0;
 int startPressed = 0;
@@ -148,6 +149,26 @@ String readSerialStrg ()
   return tmpStrg;
 }
 
+boolean def_USER()
+{
+  PosPW = 0;
+  eeprom_read_string(PosPW, buf, BUFSIZE);
+  PW = buf;
+  eeprom_read_string(50, buf, BUFSIZE);
+  myUSER = buf;
+}
+
+boolean setUSER (byte pos, String user)
+{
+  Serial.println("Please enter new "+user+" user: ");
+  replySave = readSerialStrg();
+  myUSER = "";
+  myUSER = saveStrgEEP(replySave,pos);
+  Serial.print("New User ");
+  Serial.print(myUSER);
+  Serial.println(" is set\n");
+}
+
 boolean chgPW ()
 {
   newPWD = "123456789012345618901";
@@ -157,7 +178,7 @@ boolean chgPW ()
     newPWD = readSerialStrg();
     if ( newPWD.length() > 20 )
     {
-      Serial.println("Password too long - max length are 20 chars, please retry\n");
+      Serial.println("Password too long - max length are 20 chars, pls. retry\n");
       newPWD = "123456789012345618901";
     }
   }
@@ -168,15 +189,15 @@ boolean chgPW ()
   if (newPWD == cmpPWD)
   {
     PW = "";
-    PW = saveStrgEEP(newPWD,0);
+    PW = saveStrgEEP(newPWD,PosPW);
     Serial.print("New password ");
     Serial.print(newPWD);
-    Serial.println(" is saved - please test before use\n");
+    Serial.println(" is saved\n");
     return true;
   }
   else
   {
-    Serial.println("Passwords do not match - please start over\n");
+    Serial.println("Passwords do not match - pls. start over\n");
     return false;
   }
 }  
@@ -192,41 +213,118 @@ void prtKbdStrg(String tmpStrg)
   }
 }
 
+void stat_led_red()
+{
+  pixels.setPixelColor(0, pixels.Color(0, 25, 0));
+  pixels.show();
+}
+
+void stat_led_orange()
+{
+  pixels.setPixelColor(0, pixels.Color(35, 75, 0));
+  pixels.show();
+}
+
+void stat_led_green()
+{
+  pixels.setPixelColor(0, pixels.Color(25, 0, 0));
+  pixels.show();
+}
+
+void stat_led_blue()
+{
+  pixels.setPixelColor(0, pixels.Color(0, 0, 25));
+  pixels.show();
+}
+
+void logout()
+{
+  stat_led_red();
+  def_USER();
+  
+  // CTRL-ALT-DEL:
+  Keyboard.press(KEY_LEFT_CTRL);
+  Keyboard.press(KEY_LEFT_ALT);
+  Keyboard.press(KEY_DELETE);
+  delay(200);
+  Keyboard.releaseAll();
+  delay(1500);
+  Keyboard.write(KEY_RETURN);
+}
+
+void login()
+{
+  stat_led_green();
+  def_USER();
+      
+  // CTRL-ALT-DEL:
+  Keyboard.press(KEY_LEFT_CTRL);
+  Keyboard.press(KEY_LEFT_ALT);
+  Keyboard.press(KEY_DELETE);
+  delay(100);
+  Keyboard.releaseAll();
+  delay(1000);
+  Keyboard.print(PW);
+  Keyboard.write(KEY_RETURN);
+}
+
 void setup()
 {
 
   Serial.begin(9600);
   Serial.println("klonk - Type \"help\" for available commands");
+  pixels.begin();
   
   nfc.begin();
   uint32_t versiondata = nfc.getFirmwareVersion();
   if (! versiondata) {
-    Serial.print("Didn't find PN53x board");
+    Serial.print("PN53x not found");
     while (1); // halt
   }
   nfc.SAMConfig();
 
   pinMode(buttonPin, INPUT);
+  pinMode(buttonSel, INPUT);
   digitalWrite(buttonPin, HIGH);
+  digitalWrite(buttonSel, HIGH);
 
-  pixels.begin();
-  pixels.setPixelColor(0, pixels.Color(0, 255, 0));
-  pixels.show();
+  stat_led_red();
   
   Keyboard.begin();
-  
+
   randomSeed(analogRead(0));
   
-  eeprom_read_string(0, buf, BUFSIZE);
-  PW = buf;
-  eeprom_read_string(25, buf, BUFSIZE);
+  eeprom_read_string(PosTAG, buf, BUFSIZE);
   myTAG = buf;
-  eeprom_read_string(50, buf, BUFSIZE);
-  myUSER = buf;
+  def_USER();
 }
 
 void loop()
 {
+
+  if ( digitalRead(buttonSel) == LOW && myUSER != "FFFFFFFFFFFFFFFFFFFF" && LOCK == 0 )
+  {
+    if ( PosPW == 0)
+    {
+      PosPW = 75;
+      PosUSER = 125;
+      stat_led_orange();
+    }
+    else
+    {
+      PosPW = 0;
+      PosUSER = 50;
+      stat_led_green();
+    }
+    
+    eeprom_read_string(PosPW, buf, BUFSIZE);
+    PW = buf;
+    eeprom_read_string(PosUSER, buf, BUFSIZE);
+    myUSER = buf;
+
+    digitalWrite(buttonSel, HIGH);
+    delay(500);
+  }
  
   buttonState = digitalRead(buttonPin);
   if (buttonState != lastButtonState) 
@@ -306,18 +404,18 @@ void loop()
     Serial.println("========================");
     Serial.print("Generated password: ");
     Serial.println(randPW);
-    Serial.println("Replace old password and save it? <y/n>");
+    Serial.println("Replace old password? <y/n>");
     replySave = readSerialStrg();
     
     if (replySave == "y")
     {
       PW = "";
-      PW = saveStrgEEP(randPW,0);
+      PW = saveStrgEEP(randPW,PosPW);
       Serial.println("Old password replaced by generated password\n");
     }
     else
     {
-      Serial.println("Nothing saved - current password not replaced\n");
+      Serial.println("Current password not replaced\n");
     }
   }
 
@@ -355,7 +453,7 @@ void loop()
     }
     else
     {
-      Serial.println("Wrong password - reset not started, please try again\n");
+      Serial.println("Wrong password - reset not started, pls. try again\n");
     }
   }
 
@@ -376,10 +474,9 @@ void loop()
   serialString = "";
   replySave = "";
 
-  if ( myTAG == "FFFFFFFFFFF" && myUSER == "FFFFFFFFFFFFFFFFFFFF" && PW == "FFFFFFFFFFFFFFFFFFFF" )
+  if ( myTAG == "FFFFFFFF" && myUSER == "FFFFFFFFFFFFFFFFFFFF" && PW == "FFFFFFFFFFFFFFFFFFFF" )
   {
-    pixels.setPixelColor(0, pixels.Color(0, 0, 255));
-    pixels.show();
+    stat_led_blue();
   
     while (serialString2 != "go\r\n")
     {
@@ -396,26 +493,21 @@ void loop()
     Serial.println();
   }
 
-  if ( myTAG == "FFFFFFFFFFF" )
+  if ( myTAG == "FFFFFFFF" )
   {
     delay(2000);
-    pixels.setPixelColor(0, pixels.Color(0, 0, 255));
-    pixels.show();
+    stat_led_blue();
   
-    Serial.println("Init sequence started");
-    Serial.println("Please enter new user: ");
-    replySave = readSerialStrg();
-    myUSER = "";
-    myUSER = saveStrgEEP(replySave,50);
-    Serial.print("New User ");
-    Serial.print(myUSER);
-    Serial.println(" is set\n");
+    Serial.println("Init seq. started");
+    Serial.println("=====================");
+    setUSER(50,"login");
+    PosPW = 0;
     
         
     if ( chgPW() == true)
     {
       delay(1000);
-      Serial.println("Hold your RFID-Tag close to RFID-Receiver for at least one second to register...");
+      Serial.println("Hold your RFID-Tag close to RFID-Receiver to register...");
 
       i = 0;
       while ( i == 0 )
@@ -444,13 +536,30 @@ void loop()
       myTAG = "";
       myTAG = saveStrgEEP(entryTAG,25);
       LOCK = 0;
-      pixels.setPixelColor(0, pixels.Color(255, 0, 0));
-      pixels.show();
+      stat_led_green();
       
       Serial.print("Registered TAG: ");
       Serial.println(myTAG);
       Serial.println();
       Serial.println("Init seq. done - your user and passwd are set and RFID-TAG is registered.\n");
+      
+      Serial.println("Set 2nd user? <y/n>");
+      replySave = readSerialStrg();
+        
+      if (replySave == "y")
+      {
+        stat_led_orange();
+        setUSER(125,"second");
+        PosPW = 75;
+        chgPW();
+      }
+      else
+      {
+        Serial.println("-> 2nd user not set\n");
+      }
+
+      stat_led_green();
+      def_USER();      
       Serial.println("Type 'help' for admin commands\n");
       delay(1300);
     }
@@ -486,33 +595,12 @@ void loop()
     if ( LOCK == 1) 
     { 
       LOCK = 0; 
-      pixels.setPixelColor(0, pixels.Color(255, 0, 0));
-      pixels.show();
-      
-      // CTRL-ALT-DEL:
-      Keyboard.press(KEY_LEFT_CTRL);
-      Keyboard.press(KEY_LEFT_ALT);
-      Keyboard.press(KEY_DELETE);
-      delay(100);
-      Keyboard.releaseAll();
-      delay(1000);
-      Keyboard.print(PW);
-      Keyboard.write(KEY_RETURN);
+      login();
     } 
     else 
     { 
       LOCK = 1; 
-      pixels.setPixelColor(0, pixels.Color(0, 255, 0));
-      pixels.show();
-      
-      // CTRL-ALT-DEL:
-      Keyboard.press(KEY_LEFT_CTRL);
-      Keyboard.press(KEY_LEFT_ALT);
-      Keyboard.press(KEY_DELETE);
-      delay(200);
-      Keyboard.releaseAll();
-      delay(1500);
-      Keyboard.write(KEY_RETURN);
+      logout();
     }
   delay(500);
   }

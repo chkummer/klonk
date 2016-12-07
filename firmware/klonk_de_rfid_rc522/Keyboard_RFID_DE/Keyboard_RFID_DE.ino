@@ -16,7 +16,8 @@
 
 #define SDA_PIN 2
 #define RST_PIN 3
-#define OLED 5
+//#define OLED 5 // klonk breadboard
+#define OLED 18 // klonk PCB
 #define NUMPIXELS 1
 MFRC522 mfrc522(SDA_PIN, RST_PIN);
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, OLED, NEO_GRB + NEO_KHZ800);
@@ -34,7 +35,8 @@ const int EEPROM_MAX_ADDR = 1023;
 const int BUFSIZE = 25;
 char buf[BUFSIZE];
 
-const byte buttonPin = 4;
+//const byte buttonPin = 4; // klonk breadboard
+const byte buttonPin = 19; // klonk PCB
 const byte buttonSel = 7;
 byte buttonState = 0; 
 byte lastButtonState = 0;
@@ -208,19 +210,22 @@ void prtKbdStrg(String tmpStrg)
 
 void stat_led_red()
 {
-  pixels.setPixelColor(0, pixels.Color(0, 25, 0));
+  //pixels.setPixelColor(0, pixels.Color(0, 25, 0)); //RGB APA-106, F8
+  pixels.setPixelColor(0, pixels.Color(25, 0, 0)); //RGB APA-106, F5
   pixels.show();
 }
 
 void stat_led_orange()
 {
-  pixels.setPixelColor(0, pixels.Color(35, 75, 0));
+  //pixels.setPixelColor(0, pixels.Color(35, 75, 0)); //RGB-APA 106, F8
+  pixels.setPixelColor(0, pixels.Color(75, 35, 0)); //RGB APA-106, F5
   pixels.show();
 }
 
 void stat_led_green()
 {
-  pixels.setPixelColor(0, pixels.Color(25, 0, 0));
+  //pixels.setPixelColor(0, pixels.Color(25, 0, 0)); //RGB APA-106, F8
+  pixels.setPixelColor(0, pixels.Color(0, 25, 0)); //RGB APA-106, F5
   pixels.show();
 }
 

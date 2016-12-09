@@ -276,7 +276,7 @@ void login()
   delay(100);
   Keyboard.releaseAll();
   delay(1000);
-  Keyboard.print(PW);
+  prtKbdStrg(PW);
   Keyboard.write(KEY_RETURN);
 }
 

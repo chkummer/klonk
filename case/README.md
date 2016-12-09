@@ -9,6 +9,11 @@ Printed 3d case
 ![3d case](klonk_rfid_rc522_case.jpg)
 Breadboard view
 ![Breadboard View](klonk_rfid_rc522_bb.jpg)
+Electronic parts
+![Breadboard View](klonk_rfid_rc522_parts_01.jpg)
+![Breadboard View](klonk_rfid_rc522_parts_02.jpg)
+Electronic parts soldered
+![Breadboard View](klonk_rfid_rc522_soldered.jpg)
 
 ###klonk_fingerprint case
 Customised standard box case

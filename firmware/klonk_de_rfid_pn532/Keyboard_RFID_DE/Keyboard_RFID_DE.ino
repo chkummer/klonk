@@ -441,6 +441,9 @@ void loop()
 
   if ( serialString == "reset\r\n")
   {
+    stat_led_green();
+    def_USER();
+    
     Serial.println("Reset user, password and RF-Tag");
     Serial.println("===============================");
     Serial.println("Please enter password: ");
@@ -448,7 +451,7 @@ void loop()
 
     if ( replySave == PW )
     {
-      myTAG = "FFFFFFFFFFF";
+      myTAG = "FFFFFFFF";
       Serial.println();
     }
     else

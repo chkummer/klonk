@@ -10,6 +10,7 @@
 #include <Keyboard.h>
 #include <EEPROM.h>
 #include <Adafruit_NeoPixel.h>
+#include <SoftwareSerial.h>
 #include <Adafruit_PN532.h>
 #include "usToDE.h"
 
@@ -23,9 +24,12 @@
 #define NUMPIXELS 1
 Adafruit_PN532 nfc(PN532_SCK, PN532_MISO, PN532_MOSI, PN532_SS);
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, OLED, NEO_GRB + NEO_KHZ800);
+SoftwareSerial BTserial(9, 10);
 
 String entryTAG, serialString = "", serialString2 = "", newPWD = "", cmpPWD = "", replySave = "", PW, myUSER, myTAG;
 byte LOCK = 1, i, PosPW = 0, PosTAG = 25, PosUSER = 50;
+const byte BTstate = 6;
+boolean BTconnected = false, LBTconnected = false;
 
 byte randomValue;
 char randPW[25], inChar;
@@ -44,6 +48,7 @@ int startPressed = 0;
 int endPressed = 0;
 int timeHold = 0;    
 int timeReleased = 0;
+unsigned long previousMillis = 0, interval = 5000;
 
 uint8_t success;
 uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };
@@ -237,6 +242,19 @@ void stat_led_blue()
   pixels.show();
 }
 
+void show_user_led ()
+{
+  switch (PosPW)
+  {
+    case 0:
+      stat_led_green();
+      break;
+    case 75:
+      stat_led_orange();
+      break;
+  }
+}
+
 void logout()
 {
   stat_led_red();
@@ -268,11 +286,57 @@ void login()
   Keyboard.write(KEY_RETURN);
 }
 
+void BT_tracker()
+{
+  LBTconnected = BTconnected;
+
+  if ( digitalRead(BTstate) == HIGH)  
+  { 
+    BTconnected = true;
+    if ( LOCK == 1 )
+    {
+      stat_led_red();
+    }
+    else
+    {
+      show_user_led();
+    }
+    delay(100);
+  }
+  else
+  {
+    BTconnected = false;
+    if (millis() - previousMillis > interval) 
+    {
+      previousMillis = millis();
+      stat_led_blue();
+    }
+    else
+    {
+      if ( LOCK == 1 )
+      {
+        stat_led_red();
+      }
+      else
+      {
+        show_user_led();
+      }
+    }
+    delay(100);
+  }
+  
+  if ( LOCK == 0 && BTconnected == false && LBTconnected == true )
+  { 
+    LOCK = 1; 
+    logout();
+  }
+}
+
 void setup()
 {
 
   Serial.begin(9600);
-  Serial.println("klonk - Type \"help\" for available commands");
+  Serial.println("klonk");
   pixels.begin();
   
   nfc.begin();
@@ -288,9 +352,14 @@ void setup()
   digitalWrite(buttonPin, HIGH);
   digitalWrite(buttonSel, HIGH);
 
+  pinMode(BTstate, INPUT);   
+  delay(5000);
+
   stat_led_red();
   
   Keyboard.begin();
+  BTserial.begin(38400);
+  BTserial.println("klonk");
 
   randomSeed(analogRead(0));
   
@@ -411,11 +480,11 @@ void loop()
     {
       PW = "";
       PW = saveStrgEEP(randPW,PosPW);
-      Serial.println("Old password replaced by generated password\n");
+      Serial.println("Old password replaced\n");
     }
     else
     {
-      Serial.println("Current password not replaced\n");
+      Serial.println("Old password not replaced\n");
     }
   }
 
@@ -445,7 +514,6 @@ void loop()
     def_USER();
     
     Serial.println("Reset user, password and RF-Tag");
-    Serial.println("===============================");
     Serial.println("Please enter password: ");
     replySave = readSerialStrg();
 
@@ -469,9 +537,6 @@ void loop()
     Serial.println("reset       Reset user, password and tag");
     Serial.println();
     delay(100);
-    //Serial.println("\nThe commands are only available in authenticated mode - except help, reset and upload!");
-    //Serial.println("\nSaved passwords will be printed in English keyboard layout -");
-    //Serial.println("so test the saved password by pressing the 'print-password' button!\n");
   }
 
   serialString = "";
@@ -571,6 +636,8 @@ void loop()
       return;
     }
   }
+
+  BT_tracker();
 
   success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 100);
 

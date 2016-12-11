@@ -10,6 +10,7 @@
 #include <Keyboard.h>
 #include <EEPROM.h>
 #include <Adafruit_NeoPixel.h>
+#include <SoftwareSerial.h>
 #include <Adafruit_PN532.h>
 #include "usToDE.h"
 
@@ -23,9 +24,12 @@
 #define NUMPIXELS 1
 Adafruit_PN532 nfc(PN532_SCK, PN532_MISO, PN532_MOSI, PN532_SS);
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, OLED, NEO_GRB + NEO_KHZ800);
+SoftwareSerial BTserial(9, 10);
 
 String entryTAG, serialString = "", serialString2 = "", newPWD = "", cmpPWD = "", replySave = "", PW, myUSER, myTAG;
 byte LOCK = 1, i, PosPW = 0, PosTAG = 25, PosUSER = 50;
+const byte BTstate = 6;
+boolean BTconnected = false, LBTconnected = false;
 
 byte randomValue;
 char randPW[25], inChar;
@@ -44,6 +48,7 @@ int startPressed = 0;
 int endPressed = 0;
 int timeHold = 0;    
 int timeReleased = 0;
+unsigned long previousMillis = 0, interval = 5000;
 
 uint8_t success;
 uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };
@@ -135,9 +140,10 @@ String readSerialStrg ()
   i = 0;
   while (waitPWD == 0)
   {
-    while (Serial.available() > 0)
+  
+    while (BTserial.available() > 0)
     {
-      inChar = Serial.read();
+      inChar = BTserial.read();
       if ( inChar != '\r' && inChar != '\n' && i < BUFSIZE)
       {
         tmpStrg += inChar;
@@ -160,13 +166,13 @@ boolean def_USER()
 
 boolean setUSER (byte pos, String user)
 {
-  Serial.println("Please enter new "+user+" user: ");
+  BTserial.println("Please enter new "+user+" user: ");
   replySave = readSerialStrg();
   myUSER = "";
   myUSER = saveStrgEEP(replySave,pos);
-  Serial.print("New User ");
-  Serial.print(myUSER);
-  Serial.println(" is set\n");
+  BTserial.print("New User ");
+  BTserial.print(myUSER);
+  BTserial.println(" is set\n");
 }
 
 boolean chgPW ()
@@ -174,30 +180,30 @@ boolean chgPW ()
   newPWD = "123456789012345618901";
   while ( newPWD.length() > 20 )
   {
-    Serial.println("Pleae enter new password: ");
+    BTserial.println("Pleae enter new password: ");
     newPWD = readSerialStrg();
     if ( newPWD.length() > 20 )
     {
-      Serial.println("Password too long - max length are 20 chars, pls. retry\n");
+      BTserial.println("Password too long - max length are 20 chars, pls. retry\n");
       newPWD = "123456789012345618901";
     }
   }
     
-  Serial.println("Pleae enter new password again: ");
+  BTserial.println("Pleae enter new password again: ");
   cmpPWD = readSerialStrg();
 
   if (newPWD == cmpPWD)
   {
     PW = "";
     PW = saveStrgEEP(newPWD,PosPW);
-    Serial.print("New password ");
-    Serial.print(newPWD);
-    Serial.println(" is saved\n");
+    BTserial.print("New password ");
+    BTserial.print(newPWD);
+    BTserial.println(" is saved\n");
     return true;
   }
   else
   {
-    Serial.println("Passwords do not match - pls. start over\n");
+    BTserial.println("Passwords do not match - pls. start over\n");
     return false;
   }
 }  
@@ -237,6 +243,19 @@ void stat_led_blue()
   pixels.show();
 }
 
+void show_user_led ()
+{
+  switch (PosPW)
+  {
+    case 0:
+      stat_led_green();
+      break;
+    case 75:
+      stat_led_orange();
+      break;
+  }
+}
+
 void logout()
 {
   stat_led_red();
@@ -268,12 +287,58 @@ void login()
   Keyboard.write(KEY_RETURN);
 }
 
+void BT_tracker()
+{
+  LBTconnected = BTconnected;
+
+  if ( digitalRead(BTstate) == HIGH)  
+  { 
+    BTconnected = true;
+    if ( LOCK == 1 )
+    {
+      stat_led_red();
+    }
+    else
+    {
+      show_user_led();
+    }
+    delay(100);
+  }
+  else
+  {
+    BTconnected = false;
+    if (millis() - previousMillis > interval) 
+    {
+      previousMillis = millis();
+      stat_led_blue();
+    }
+    else
+    {
+      if ( LOCK == 1 )
+      {
+        stat_led_red();
+      }
+      else
+      {
+        show_user_led();
+      }
+    }
+    delay(100);
+  }
+  
+  if ( LOCK == 0 && BTconnected == false && LBTconnected == true )
+  { 
+    LOCK = 1; 
+    logout();
+  }
+}
+
 void setup()
 {
 
+  Keyboard.begin();
   Serial.begin(9600);
-  Serial.println("klonk - Type \"help\" for available commands");
-  pixels.begin();
+  Serial.println("klonk");
   
   nfc.begin();
   uint32_t versiondata = nfc.getFirmwareVersion();
@@ -288,9 +353,14 @@ void setup()
   digitalWrite(buttonPin, HIGH);
   digitalWrite(buttonSel, HIGH);
 
+  pinMode(BTstate, INPUT);   
+  delay(2500);
+
+  pixels.begin();
   stat_led_red();
   
-  Keyboard.begin();
+  BTserial.begin(38400);
+  BTserial.println("klonk");
 
   randomSeed(analogRead(0));
   
@@ -364,21 +434,19 @@ void loop()
   }
   lastButtonState = buttonState;
   
-  while (Serial.available() > 0) 
+  if (BTserial.available()) 
   {
     // read incoming serial data:
-    inChar = Serial.read();
-    serialString += inChar;
+    serialString = BTserial.readString();
   }
-
-  if ( serialString == "passwd\r\n" && LOCK == 0)
+  
+  if ( serialString == "passwd" && LOCK == 0)
   {
-    Serial.println("Changing existing password");
-    Serial.println("==========================");
+    BTserial.println("Changing existing password");
     chgPW();
   }
 
-  if ( serialString == "pwgen\r\n" && LOCK == 0)
+  if ( serialString == "pwgen" && LOCK == 0)
   {
     randomValue = 0;
     memset(randPW, 0, sizeof(randPW));
@@ -400,26 +468,25 @@ void loop()
       }
     }
 
-    Serial.println("Generate random password");
-    Serial.println("========================");
-    Serial.print("Generated password: ");
-    Serial.println(randPW);
-    Serial.println("Replace old password? <y/n>");
+    BTserial.println("Generate random password");
+    BTserial.print("Generated password: ");
+    BTserial.println(randPW);
+    BTserial.println("Replace old password? <y/n>");
     replySave = readSerialStrg();
     
     if (replySave == "y")
     {
       PW = "";
       PW = saveStrgEEP(randPW,PosPW);
-      Serial.println("Old password replaced by generated password\n");
+      BTserial.println("Old password replaced\n");
     }
     else
     {
-      Serial.println("Current password not replaced\n");
+      BTserial.println("Old password not replaced\n");
     }
   }
 
-  if ( serialString == "passwin\r\n" && LOCK == 0)
+  if ( serialString == "passwin" && LOCK == 0)
   {
       Keyboard.press(KEY_LEFT_CTRL);
       Keyboard.press(KEY_LEFT_ALT);
@@ -439,39 +506,35 @@ void loop()
       Keyboard.write(KEY_RETURN);
   }
 
-  if ( serialString == "reset\r\n")
+  if ( serialString == "reset")
   {
     stat_led_green();
     def_USER();
     
-    Serial.println("Reset user, password and RF-Tag");
-    Serial.println("===============================");
-    Serial.println("Please enter password: ");
+    BTserial.println("Reset user, password and RF-Tag");
+    BTserial.println("Please enter password: ");
     replySave = readSerialStrg();
 
     if ( replySave == PW )
     {
       myTAG = "FFFFFFFF";
-      Serial.println();
+      BTserial.println();
     }
     else
     {
-      Serial.println("Wrong password - reset not started, pls. try again\n");
+      BTserial.println("Wrong password - reset not started, pls. try again\n");
     }
   }
 
-  if ( serialString == "help\r\n" )
+  if ( serialString == "help" )
   {
-    Serial.println("help        List of commands");
-    Serial.println("passwd      Change password");
-    Serial.println("pwgen       Generate random password");
-    Serial.println("passwin     Change windows password");
-    Serial.println("reset       Reset user, password and tag");
-    Serial.println();
+    BTserial.println("help        List of commands");
+    BTserial.println("passwd      Change password");
+    BTserial.println("pwgen       Generate random password");
+    BTserial.println("passwin     Change windows password");
+    BTserial.println("reset       Reset user, password and tag");
+    BTserial.println();
     delay(100);
-    //Serial.println("\nThe commands are only available in authenticated mode - except help, reset and upload!");
-    //Serial.println("\nSaved passwords will be printed in English keyboard layout -");
-    //Serial.println("so test the saved password by pressing the 'print-password' button!\n");
   }
 
   serialString = "";
@@ -481,19 +544,18 @@ void loop()
   {
     stat_led_blue();
   
-    while (serialString2 != "go\r\n")
+    while (serialString2 != "go")
     {
       delay (1000);
-      Serial.println("Please enter \"go\" to init user, password and RFID-tag");
-      while (Serial.available() > 0) 
+      BTserial.println("Please enter \"go\" to init user, password and RFID-tag");
+      if (BTserial.available()) 
       {
         // read incoming serial data:
-        inChar = Serial.read();
-        serialString2 += inChar;
+        serialString2 = BTserial.readString();
       }
     } 
     serialString2 = "";
-    Serial.println();
+    BTserial.println();
   }
 
   if ( myTAG == "FFFFFFFF" )
@@ -501,8 +563,7 @@ void loop()
     delay(2000);
     stat_led_blue();
   
-    Serial.println("Init seq. started");
-    Serial.println("=====================");
+    BTserial.println("Init seq. started");
     setUSER(50,"login");
     PosPW = 0;
     
@@ -510,7 +571,7 @@ void loop()
     if ( chgPW() == true)
     {
       delay(1000);
-      Serial.println("Hold your RFID-Tag close to RFID-Receiver to register...");
+      BTserial.println("Hold your RFID-Tag close to RFID-Receiver to register...");
 
       i = 0;
       while ( i == 0 )
@@ -541,12 +602,12 @@ void loop()
       LOCK = 0;
       stat_led_green();
       
-      Serial.print("Registered TAG: ");
-      Serial.println(myTAG);
-      Serial.println();
-      Serial.println("Init seq. done - your user and passwd are set and RFID-TAG is registered.\n");
+      BTserial.print("Registered TAG: ");
+      BTserial.println(myTAG);
+      BTserial.println();
+      BTserial.println("Init seq. done - your user and passwd are set and RFID-TAG is registered.\n");
       
-      Serial.println("Set 2nd user? <y/n>");
+      BTserial.println("Set 2nd user? <y/n>");
       replySave = readSerialStrg();
         
       if (replySave == "y")
@@ -558,12 +619,12 @@ void loop()
       }
       else
       {
-        Serial.println("-> 2nd user not set\n");
+        BTserial.println("-> 2nd user not set\n");
       }
 
       stat_led_green();
       def_USER();      
-      Serial.println("Type 'help' for admin commands\n");
+      BTserial.println();
       delay(1300);
     }
     else
@@ -571,6 +632,8 @@ void loop()
       return;
     }
   }
+
+  BT_tracker();
 
   success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 100);
 
@@ -592,7 +655,7 @@ void loop()
   {
     entryTAG = "";
   }
-  
+
   if ( entryTAG == myTAG )
   {
     if ( LOCK == 1) 

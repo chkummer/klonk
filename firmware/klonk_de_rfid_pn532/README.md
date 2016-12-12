@@ -46,8 +46,8 @@ will logout of Windows Desktop and enter locked mode when the bluetooth pairing 
 The following directories contain firmware for the described versions of klonk:
 
 * Keyboard_RFID_DE: USB serial
-* Keyboard_RFID_DE_BT: USB serial, automatic lock and logout (not yet implemented)
-* Keyboard_RFID_DE_BT_Serial: Bluetooth serial, automatic lock and logout (not yet implemented)
+* Keyboard_RFID_DE_BT: USB serial, automatic lock and logout
+* Keyboard_RFID_DE_BT_Serial: Bluetooth serial, automatic lock and logout
 
 #Bill of Materials
 * Pro Micro1: Sparkfun Pro Micro input voltage 5.0 V; Prozessor MK20DX256; Variante variant 2; i/o voltage 5.0 V (or compatible)

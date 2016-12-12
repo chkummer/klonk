@@ -30,7 +30,6 @@ unsigned long previousMillis = 0, interval = 5000;
 byte randomValue;
 char randPW[25], inChar;
 byte randNumBytes = 20;
-int charsRead;
 
 const int EEPROM_MIN_ADDR = 0;
 const int EEPROM_MAX_ADDR = 1023;

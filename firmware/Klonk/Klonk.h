@@ -2,11 +2,7 @@
 #define KLONK_H 1
 
   #include <Arduino.h>
-  #include <MFRC522.h>
-  
-  // RFID pins
-  #define SDA_PIN 2
-  #define RST_PIN 3
+  #include "config.h"
   
   // LED and Button pin definitions
   #if (BOARD == 1) // BCP
@@ -49,9 +45,5 @@
 
   void led_init();
   void set_led(uint8_t red, uint8_t green, uint8_t blue);
-
-  void get_tag(MFRC522 *rfid_ptr, RFID_TAG *tag_ptr);
-  boolean is_tag_available(MFRC522 *rfid_ptr);
-
 
 #endif

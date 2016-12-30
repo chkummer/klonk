@@ -148,19 +148,6 @@ byte get_button_action()
 
 
 
-void get_tag(MFRC522 *rfid_ptr, RFID_TAG *tag_ptr)
-{
-  tag_ptr->len = rfid_ptr->uid.size;
-  strncpy(tag_ptr->bytes, rfid_ptr->uid.uidByte, TAG_LEN);
-}
-
-
-
-boolean is_tag_available(MFRC522 *rfid_ptr)
-{
-  return (rfid_ptr->PICC_IsNewCardPresent() && rfid_ptr->PICC_ReadCardSerial());
-}
-
 
 
 /*
@@ -187,7 +174,7 @@ void loop()
 {
   static byte     user_num;
   static boolean  lock;
-  static MFRC522  rfid;
+  static token_t  rfid;
   static MetaData meta;
   static UserData user;
   static RFID_TAG tag;
@@ -207,8 +194,7 @@ void loop()
   }
 
   if (millis() < 1000) {
-    rfid = MFRC522(SDA_PIN, RST_PIN);
-    rfid.PCD_Init();
+    token_init(&rfid);
 
     lock = true;
     load_metadata(&meta);

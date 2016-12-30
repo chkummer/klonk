@@ -5,12 +5,12 @@
 #include <Arduino.h>
 #include <Keyboard.h>
 #include <WString.h>
-#include <MFRC522.h>
-
 
 #include "config.h"
 #include "store.h"
+#include "token.h"
 #include "Klonk.h"
+
 
 
 String readSerialString()
@@ -41,11 +41,6 @@ String readSerialStringLen(int len)
   return str;
 }
 
-
-boolean chk_passwd(int id, RFID_TAG *tag_ptr)
-{
-  
-}
 
 
 boolean get_password(char *pwd) {
@@ -82,6 +77,20 @@ boolean get_password(char *pwd) {
 
 
 
+void set_password(int id, UserData *user_ptr, RFID_TAG *tag_ptr)
+{
+  char pwd[PWD_MAX_LEN + 1];
+
+  if (get_password(pwd))
+  {
+    strncpy(user_ptr->pwd, pwd, PWD_MAX_LEN);
+    user_ptr->sum = get_user_crc32(user_ptr);
+    store_user(id, tag_ptr, user_ptr);
+  }
+}
+
+
+
 void klonk_init()
 {
   MetaData  meta = {.k_state = STATE_INIT, .lang = 0};
@@ -99,34 +108,32 @@ void klonk_init()
 
 
 
-void klonk_chpw(int id, MFRC522 *rfid_ptr)
+void klonk_chpw(int id, token_t *rfid_ptr)
 {
+  UserData user;
+  RFID_TAG tag;
+
+  Serial.println("Reset password and RF-Tag");
+  Serial.println("=========================");
+
+  wait_for_tag(rfid_ptr, &tag);
   
+  load_user(id, &tag, &user);
+  set_password(id, &user, &tag);
 }
 
 
 
-void klonk_pw_reset(int id, MFRC522 *rfid_ptr)
+void klonk_pw_reset(int id, token_t *rfid_ptr)
 {
-  RFID_TAG tag;
   char     uid[UID_MAX_LEN + 1];
-  char     pwd[PWD_MAX_LEN + 1];
   UserData user;
-
-  set_led(COLOR_BLUE);
+  RFID_TAG tag;
 
   Serial.println("Reset user, password and RF-Tag");
   Serial.println("===============================");
-  Serial.println("Please register tag:");
 
-  while (! is_tag_available(rfid_ptr))
-  {
-    delay(100);
-  }
-  get_tag(rfid_ptr, &tag);
-  Serial.println("Got Tag");
-
-  set_led(COLOR_GREEN);
+  wait_for_tag(rfid_ptr, &tag);
 
   do
   {
@@ -135,13 +142,9 @@ void klonk_pw_reset(int id, MFRC522 *rfid_ptr)
     Serial.println(" user: ");
     strncpy(uid, readSerialStringLen(UID_MAX_LEN).c_str(), UID_MAX_LEN);
   } while (strlen(uid) == 0);
-
   strncpy(user.uid, uid, UID_MAX_LEN); 
-  if (get_password(pwd))
-  {
-    user.sum = get_user_crc32(&user);
-    store_user(id, &tag, &user);
-  }
+
+  set_password(id, &user, &tag);
 }
 
 
@@ -160,7 +163,7 @@ void klonk_print_help()
 
 
 
-void handle_serial_input(boolean lock, MFRC522 *rfid_ptr, RFID_TAG *tag_ptr)
+void handle_serial_input(boolean lock, token_t *rfid_ptr, RFID_TAG *tag_ptr)
 {
   String command = readSerialString();
 
@@ -168,14 +171,6 @@ void handle_serial_input(boolean lock, MFRC522 *rfid_ptr, RFID_TAG *tag_ptr)
   {
     Serial.println("Changing existing password");
     Serial.println("==========================");
-
-    if (lock)
-    {
-//      if (! chk_passwd(0, tag_ptr))
-//      {
-//        return;
-//      }
-    }
 
     klonk_chpw(0, rfid_ptr);
   }
@@ -223,81 +218,4 @@ void handle_serial_input(boolean lock, MFRC522 *rfid_ptr, RFID_TAG *tag_ptr)
   } else {
     
   }
-
 }
-
-
-
-/*void initialize_user_data() {
-  delay(2000);
-  set_led(COLOR_BLUE);
-  
-  Serial.println("Init sequence started");
-  Serial.println("=====================");
-  setUSER(50,"login");
-  PosPW = 0;
-        
-  if ( chgPW() == true)
-  {
-    delay(1000);
-    Serial.println("Hold your RFID-Tag close to RFID-Receiver for at least one second to register...");
-
-    i = 0;
-    while ( i == 0 )
-    {
-      while ( ! mfrc522.PICC_IsNewCardPresent() )
-      {
-        // wait until card is detected...
-      }
-
-      if ( mfrc522.PICC_ReadCardSerial() )
-      {
-        i = 1; // wailt until RIFD sender is choosen...
-      }
-    }
-
-    delay(1000);
-      
-    entryTAG = "";
-    for (byte i = 0; i < mfrc522.uid.size; i++)
-    {
-      entryTAG = entryTAG + String (mfrc522.uid.uidByte[i], HEX);
-    }
-
-    myTAG = "";
-    myTAG = saveStrgEEP(entryTAG,25);
-    LOCK = 0;
-    set_led(COLOR_GREEN);
-      
-    Serial.print("Registered TAG: ");
-    Serial.println(myTAG);
-    Serial.println();
-    Serial.println("Init seq. done - your login user and passwd are set and RFID-TAG is registered.\n");
-
-    Serial.println("Set 2nd user? <y/n>");
-    replySave = readSerialString();
-        
-    if (replySave == "y")
-    {
-      set_led(COLOR_ORANGE);
-      setUSER(125,"second");
-      PosPW = 75;
-      chgPW();
-    }
-    else
-    {
-      Serial.println("-> 2nd user not set\n");
-    }
-
-    set_led(COLOR_GREEN);
-    def_USER();
-    Serial.println("Type 'help' for admin commands\n");
-    delay(1300);
-  }
-  else
-  {
-    return;
-  }
-}
-*/
-

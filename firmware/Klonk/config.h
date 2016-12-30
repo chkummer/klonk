@@ -11,5 +11,6 @@
 
 #define MAX_USERS 2
 
+#define TOKEN MFRC522
 
 #endif

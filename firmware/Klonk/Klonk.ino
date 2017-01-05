@@ -1,76 +1,78 @@
+
 //
-// This sketch pretends to be a keyboard and prints a stored password by pressing a button. Furthermore you can login/logout by registered RFID-Tag. 
+// This sketch pretends to be a keyboard and prints a stored password by pressing a button. Furthermore you can login/logout by registered RFID-Tag.
 // There are 4 commands available to administer the user and password.
-// 
+//
 // Author: Ming-Che Lee <ming-che.lee@gmx.ch
 //
 // Licence: You may use, alternate and re-distribute it as you wish. Use at own risk!
-// 
+//
 
 #include <Arduino.h>
 #include <SPI.h>
 #include <Keyboard.h>
 #include <EEPROM.h>
 
-#include "config.h"
 #include "Klonk.h"
+#include "usToDE.h"
+#include "config.h"
 #include "serial_ui.h"
 #include "store.h"
-#include "usToDE.h"
+
+
 
 #ifdef LED
-  #include <Adafruit_NeoPixel.h>
+#include <Adafruit_NeoPixel.h>
 
-  Adafruit_NeoPixel pixels = Adafruit_NeoPixel(1, LED_PIN, LED_TYPE);
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(1, LED_PIN, LED_TYPE);
 
-  void led_init() {
-    pixels.begin();
-  }
-  
-  void set_led(uint8_t red, uint8_t green, uint8_t blue) {
-    pixels.setPixelColor(0, red, green, blue);
-    pixels.show();
-  }
+void led_init() {
+  pixels.begin();
+}
+
+void set_led(uint8_t red, uint8_t green, uint8_t blue) {
+  pixels.setPixelColor(0, red, green, blue);
+  pixels.show();
+}
 
 #else
-  // No RGB LED; nothing to be done
-  void led_init() {    
-  }
-  
-  void set_led(uint8_t red, uint8_t green, uint8_t blue) {
-  }
+// No RGB LED; nothing to be done
+void led_init() {
+}
+
+void set_led(uint8_t red, uint8_t green, uint8_t blue) {
+}
 #endif      // #ifdef LED
 
 
 
-void prtKbdStrg(String tmpStrg)
+void send_string_to_keyboard(const char *str)
 {
-  byte strgLen = tmpStrg.length();
-  for (int i = 0; i < strgLen; i++)
+  int i = 0;
+  while ( str[i] )
   {
-    unsigned char key = (usToDE[tmpStrg[i]]);
-    Keyboard.write(key);
+    Keyboard.write(usToDE[str[i]]);
   }
 }
 
 
 
-void send_password(UserData *user_ptr)
+void send_password(user_data *user_ptr)
 {
-  prtKbdStrg(user_ptr->pwd);
+  send_string_to_keyboard(user_ptr->pwd);
   Keyboard.write(KEY_RETURN);
-  delay(500);  
+  delay(500);
 }
 
 
 
-void send_user_password(UserData *user_ptr)
+void send_user_password(user_data *user_ptr)
 {
-  prtKbdStrg(user_ptr->uid);
+  send_string_to_keyboard(user_ptr->uid);
   delay(500);
 
   Keyboard.press(KEY_TAB);
-  delay(100);  
+  delay(100);
   Keyboard.release(KEY_TAB);
   delay(100);
 
@@ -92,10 +94,10 @@ void logout()
 
 
 
-void login(UserData *user_ptr)
+void login(user_data *user_ptr)
 {
   set_led(COLOR_GREEN);
-      
+
   // CTRL-ALT-DEL:
   Keyboard.press(KEY_LEFT_CTRL);
   Keyboard.press(KEY_LEFT_ALT);
@@ -112,34 +114,36 @@ byte get_button_action()
 {
   static long startPressed;
   static long endPressed;
-  static byte button_state, old_button_state;
+  static byte buttonState, oldButtonState;
 
   int timeHold;
-  int time_stamp = millis();
+  int timeStamp = millis();
 
-  if (time_stamp < START_DELAY) {
+  if (timeStamp < START_DELAY) {
     startPressed = 0;
     endPressed = 0;
 
     return NONE;
   }
-  
-  if (digitalRead(BUTTON_PIN) == LOW) 
-  {
-      startPressed = time_stamp;
-  } 
-  else 
-  {
-    endPressed = time_stamp;
-    timeHold = endPressed - startPressed;
 
-    if (timeHold >= 50 && timeHold < 500) //short pressed
+  if (buttonState != oldButtonState) {
+    if (digitalRead(BUTTON_PIN) == LOW)
     {
-      return SHORT;
+      startPressed = timeStamp;
     }
-    else if (timeHold >= 500)              //long pressed
+    else
     {
-      return LONG;
+      endPressed = timeStamp;
+      timeHold = endPressed - startPressed;
+
+      if (timeHold >= 50 && timeHold < 500) //short pressed
+      {
+        return SHORT;
+      }
+      else if (timeHold >= 500)              //long pressed
+      {
+        return LONG;
+      }
     }
   }
 
@@ -148,11 +152,9 @@ byte get_button_action()
 
 
 
-
-
 /*
- * Arduino setup function
- */
+   Arduino setup function
+*/
 void setup()
 {
   SPI.begin();
@@ -160,7 +162,7 @@ void setup()
   led_init();
   set_led(COLOR_WHITE);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
-  
+
   Keyboard.begin();
   Serial.begin(9600);
   Serial.println("klonk - Type \"help\" for available commands");
@@ -168,24 +170,26 @@ void setup()
 
 
 /*
- * Arduino mein function
- */
+   Arduino mein function
+*/
 void loop()
 {
-  static byte     user_num;
+  static byte     userNum;
   static boolean  lock;
   static token_t  rfid;
-  static MetaData meta;
-  static UserData user;
-  static RFID_TAG tag;
-  
-  if (lock == 0) {
+  static meta_data meta;
+  static user_data user;
+  static rfid_tag tag;
+
+  if (lock == false) {
     switch (get_button_action())
     {
       case SHORT:
+        debug("Send password");
         send_password(&user);
         break;
       case LONG:
+        debug("Send user + password");
         send_user_password(&user);
         break;
       default:
@@ -196,46 +200,53 @@ void loop()
   if (millis() < 1000) {
     token_init(&rfid);
 
-    lock = true;
+    //    lock = true;
+    lock = false;
     load_metadata(&meta);
     tag = {.bytes = {0}, .len = 0};
-    
+
     delay(START_DELAY - millis());
-    set_led(COLOR_RED);
+    //    set_led(COLOR_RED);
+    set_led(COLOR_GREEN);
   }
 
   if (meta.k_state != STATE_ACTV)
   {
+    debug("State undefined; initializing");
+
     klonk_init();
     klonk_pw_reset(0, &rfid);
-  }
-  
-  // handle serial input
-  if (Serial.available() > 0) 
-  {
-    handle_serial_input(lock, &rfid, &tag);
+
+    load_metadata(&meta);
   }
 
+  //  // handle serial input
+  //  if (Serial.available() > 0)
+  //  {
+  //    debug("Handling input");
+  //    handle_serial_input(lock, &rfid, &tag);
+  //  }
 
-  if (is_tag_available(&rfid))
-  {
-    get_tag(&rfid, &tag);
 
-    if (validate_tag(&tag))
-    {
-      load_user(user_num, &tag, &user);
-      lock = !lock;            //toggle status
-      if (lock)
-      {
-        logout();  
-      }
-      else
-      {
-        login(&user);
-      }
-
-      delay(500);
-    }
-  }
+  //  if (is_tag_available(&rfid))
+  //  {
+  //    get_tag(&rfid, &tag);
+  //
+  //    if (validate_tag(&tag))
+  //    {
+  //      load_user(userNum, &tag, &user);
+  //      lock = !lock;            //toggle status
+  //      if (lock)
+  //      {
+  //        logout();
+  //      }
+  //      else
+  //      {
+  //        login(&user);
+  //      }
+  //
+  //      delay(500);
+  //    }
+  //  }
 }
 

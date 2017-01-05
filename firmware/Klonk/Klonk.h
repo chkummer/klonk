@@ -16,6 +16,7 @@
   
   #define COLOR_RED    25,  0,  0
   #define COLOR_ORANGE 75, 35,  0
+  #define COLOR_YELLOW 35, 35,  0
   #define COLOR_GREEN   0, 25,  0
   #define COLOR_BLUE    0,  0, 25
   #define COLOR_WHITE  25, 25, 25
@@ -38,7 +39,7 @@
 
   #define START_DELAY 1000
 
-  struct RFID_TAG {
+  struct rfid_tag {
     byte bytes[TAG_LEN];
     byte len;
   };

@@ -1,4 +1,6 @@
+#include "serial_ui.h"
 #include "token.h"
+
 
 
 #if (TOKEN == MFRC522)
@@ -10,17 +12,22 @@
 
 
 
-  void get_tag(token_t *rfid_ptr, RFID_TAG *tag_ptr)
+  void get_tag(token_t *rfid_ptr, rfid_tag *tag_ptr)
   {
     tag_ptr->len = rfid_ptr->uid.size;
     strncpy(tag_ptr->bytes, rfid_ptr->uid.uidByte, TAG_LEN);
   }
-  
-  
-  
-  void wait_for_tag(token_t *rfid_ptr, RFID_TAG *tag_ptr)
+
+  void wait_for_tag(token_t *rfid_ptr, rfid_tag *tag_ptr)
   {
+    debug("Got TAG");
+
     set_led(COLOR_BLUE);
+    for (int i = tag_ptr->len - 1; i > 0; i--)
+    {
+      Serial.print(tag_ptr->bytes[i], HEX);
+    }
+    debug("END TAG");
   
     Serial.println("Please register tag:");
   

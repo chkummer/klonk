@@ -1,6 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H 1
 
+#define DEBUG 1
 
 #define BOARD 1     // Possible values 1=BCP, 2=breadboard
 #define LED   5     // LED Type: 5=RGB APA-106, F5;  8=RGB APA-106, F8

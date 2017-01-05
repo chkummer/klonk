@@ -13,7 +13,7 @@ boolean eeprom_is_addr_ok(int addr)
 
 
 
-uint32_t get_user_crc32(const UserData *user_ptr)
+uint32_t get_user_crc32(const user_data *user_ptr)
 {
   FastCRC32 crc;
 
@@ -23,9 +23,9 @@ uint32_t get_user_crc32(const UserData *user_ptr)
 
 
 
-boolean validate_tag(RFID_TAG *tag_ptr)
+boolean validate_tag(rfid_tag *tag_ptr)
 {
-  UserData  user;
+  user_data  user;
   
   load_user(0, tag_ptr, &user);
   if (user.sum == get_user_crc32(&user))
@@ -38,7 +38,7 @@ boolean validate_tag(RFID_TAG *tag_ptr)
 
 
 
-void encrypt(UserData *user_ptr, const RFID_TAG *tag_ptr) 
+void encrypt(user_data *user_ptr, const rfid_tag *tag_ptr) 
 {
   FastCRC32 crc;
   byte *data = (byte *) user_ptr;
@@ -61,34 +61,34 @@ void encrypt(UserData *user_ptr, const RFID_TAG *tag_ptr)
 
 
 
-void decrypt(UserData *user_ptr, const RFID_TAG *tag_ptr) 
+void decrypt(user_data *user_ptr, const rfid_tag *tag_ptr) 
 {
   encrypt(user_ptr, tag_ptr);
 }
 
 
 
-void store_metadata(MetaData *meta_ptr)
+void store_metadata(const meta_data *meta_ptr)
 {
   EEPROM.put(0, *meta_ptr);  
 }
 
 
 
-void load_metadata(MetaData *meta_ptr)
+void load_metadata(meta_data *meta_ptr)
 {
   EEPROM.get(0, *meta_ptr);
 }
 
 
 
-boolean load_user(int id, const RFID_TAG *tag_ptr, UserData *user_ptr)
+boolean load_user(int id, const rfid_tag *tag_ptr, user_data *user_ptr)
 {
   if (id < MAX_USERS)
   {
-    int addr = sizeof(MetaData) + id * sizeof(UserData);
+    int addr = sizeof(meta_data) + id * sizeof(user_data);
 
-    if (eeprom_is_addr_ok(addr) && eeprom_is_addr_ok(addr + sizeof(UserData)))
+    if (eeprom_is_addr_ok(addr) && eeprom_is_addr_ok(addr + sizeof(user_data)))
     {
       EEPROM.get(addr, *user_ptr);
       decrypt(user_ptr, tag_ptr);
@@ -101,13 +101,13 @@ boolean load_user(int id, const RFID_TAG *tag_ptr, UserData *user_ptr)
 
 
 
-boolean store_user(int id, const RFID_TAG *tag_ptr, const UserData *user_ptr)
+boolean store_user(int id, const rfid_tag *tag_ptr, const user_data *user_ptr)
 {
   if (id < MAX_USERS)
   {
-    int addr = sizeof(MetaData) + id * sizeof(UserData);
+    int addr = sizeof(meta_data) + id * sizeof(user_data);
 
-    if (eeprom_is_addr_ok(addr) && eeprom_is_addr_ok(addr + sizeof(UserData)))
+    if (eeprom_is_addr_ok(addr) && eeprom_is_addr_ok(addr + sizeof(user_data)))
     {
       encrypt(user_ptr, tag_ptr);
       EEPROM.put(addr, *user_ptr);

@@ -9,26 +9,26 @@
   #define STATE_ACTV 0xBDBD
 
   
-  struct UserData {
+  struct user_data {
     char      uid[UID_MAX_LEN + 1];
     char      pwd[PWD_MAX_LEN + 1];
     uint32_t  sum;
   };
 
-  struct MetaData {
+  struct meta_data {
     uint16_t  k_state;
     byte      lang;
   };
 
   boolean eeprom_is_addr_ok(int addr);
-  uint32_t get_user_crc32(const UserData *user_ptr);
+  uint32_t get_user_crc32(const user_data *user_ptr);
 
-  boolean validate_tag(RFID_TAG *tag);
+  boolean validate_tag(rfid_tag *tag);
 
-  void load_metadata(MetaData *meta_ptr);
-  void store_metadata(const MetaData *meta_ptr);
+  void load_metadata(meta_data *meta_ptr);
+  void store_metadata(const meta_data *meta_ptr);
 
-  boolean load_user(int id, const RFID_TAG *tag_ptr, UserData *user_ptr);
-  boolean store_user(int id, const RFID_TAG *tag_ptr, const UserData *user_ptr);
+  boolean load_user(int id, const rfid_tag *tag_ptr, user_data *user_ptr);
+  boolean store_user(int id, const rfid_tag *tag_ptr, const user_data *user_ptr);
 
 #endif

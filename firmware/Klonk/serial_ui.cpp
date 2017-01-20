@@ -3,7 +3,6 @@
 */
 
 #include <Arduino.h>
-#include <Keyboard.h>
 #include <WString.h>
 
 #include "Klonk.h"
@@ -16,11 +15,14 @@
 
 String read_serial_string()
 {
+  String str = "";
+
   if (Serial.available() > 0) {
-    return Serial.readString();
+    str = Serial.readString();
   }
 
-  return "";
+  str.trim();
+  return str;
 }
 
 
@@ -50,9 +52,9 @@ byte get_user_id()
 
   while (1)
   {
-    Serial.print("Please enter user id (1-");
-    Serial.print(MAX_USERS);
-    Serial.println("): ");
+    PRINT_S("Please enter user id (1-");
+    PRINT(MAX_USERS);
+    PRINT_LN_S("): ");
 
     while (id == 0) {
       id = read_serial_string().toInt();
@@ -72,21 +74,21 @@ boolean get_password(char *pwd) {
   String pw_str;
 
   memset(pwd, 0, PWD_MAX_LEN + 1);
-  Serial.println("Please enter new password: ");
+  PRINT_LN_S("Please enter new password: ");
   pw_str = read_serial_string_len(PWD_MAX_LEN);
   strncpy(pwd, pw_str.c_str(), PWD_MAX_LEN);
   pwd[PWD_MAX_LEN ] = 0;
 
   if (strlen(pwd) == 0)
   {
-    Serial.print("Password too long - max length are ");
-    Serial.print(PWD_MAX_LEN);
-    Serial.println(" chars, please retry\n");
+    PRINT_S("Password too long - max length are ");
+    PRINT(PWD_MAX_LEN);
+    PRINT_LN_S(" chars, please retry\n");
 
     return false;
   }
 
-  Serial.println("Please enter new password again: ");
+  PRINT_LN_S("Please enter new password again: ");
   pw_str = read_serial_string_len(PWD_MAX_LEN);
 
   if (strcmp(pwd, pw_str.c_str()) == 0)
@@ -95,7 +97,7 @@ boolean get_password(char *pwd) {
   }
   else
   {
-    Serial.println("Passwords do not match - please start over\n");
+    PRINT_LN_S("Passwords do not match - please start over\n");
     return false;
   }
 }
@@ -108,6 +110,8 @@ void set_password(int id, user_data *user_ptr, rfid_tag *tag_ptr)
 
   if (get_password(pwd))
   {
+    debug("Got passwd");
+    debug_v(pwd);
     strncpy(user_ptr->pwd, pwd, PWD_MAX_LEN);
     user_ptr->sum = get_user_crc32(user_ptr);
     store_user(id, tag_ptr, user_ptr);
@@ -118,14 +122,14 @@ void set_password(int id, user_data *user_ptr, rfid_tag *tag_ptr)
 
 void klonk_init()
 {
-  meta_data  meta = {.k_state = STATE_INIT, .lang = 0};
+  meta_data  meta = {.k_state = STATE_INIT, .lang = true};
   user_data  user = {.uid = {0}, .pwd = {0}};
   rfid_tag   tag = {.bytes = {0}, .len = 0};
   String     input;
 
   do {
     delay(1000);
-    Serial.println("Enter 'init' to start initializing");
+    PRINT_LN_S("Enter 'go' to start initializing");
     input = read_serial_string();
   } while (input != 'go');
 
@@ -134,13 +138,47 @@ void klonk_init()
 
   user.sum = get_user_crc32(&user);
   debug("SUM:");
-  debug(user.sum);
+  debug_v(user.sum);
 
   for (int i = 0; i < MAX_USERS; i++)
   {
     store_user(i, &tag, &user);
   }
-  Serial.println("Initialized Klonk");
+  PRINT_LN_S("Initialized Klonk");
+}
+
+
+
+void klonk_set_lang()
+{
+  meta_data meta;
+  String lang_str = "";
+
+  load_metadata(&meta);
+  PRINT_S("Please enter kbd language (sg/en):");
+
+  while (lang_str.length() == 0)
+  {
+    lang_str = read_serial_string();
+  }
+  lang_str.trim();
+
+  if (lang_str == "en")
+  {
+    meta.lang = true;
+  }
+  else if (lang_str == "sg")
+  {
+    meta.lang = false;
+  }
+  else
+  {
+    PRINT_LN_S("Unknown language");
+    return;
+  }
+
+  PRINT_LN();
+  store_metadata(&meta);
 }
 
 
@@ -150,8 +188,11 @@ void klonk_chpw(int id, token_t *rfid_ptr)
   user_data user;
   rfid_tag tag;
 
-  Serial.println("Reset password and RF-Tag");
-  Serial.println("=========================");
+  PRINT_LN_S("Reset password and RF-Tag");
+  PRINT_LN_S("=========================");
+
+  debug("User_ID");
+  debug_v(id);
 
   wait_for_tag(rfid_ptr, &tag);
 
@@ -168,16 +209,16 @@ void klonk_pw_reset(int id, token_t *rfid_ptr)
   meta_data meta;
   rfid_tag  tag;
 
-  Serial.println("Reset user, password and RF-Tag");
-  Serial.println("===============================");
+  PRINT_LN_S("Reset user, password and RF-Tag");
+  PRINT_LN_S("===============================");
 
   wait_for_tag(rfid_ptr, &tag);
 
   do
   {
-    Serial.print("Please enter new ");
-    Serial.print(id + 1);
-    Serial.println(" user: ");
+    PRINT_S("Please enter new ");
+    PRINT(id + 1);
+    PRINT_LN_S(" user: ");
     strncpy(uid, read_serial_string_len(UID_MAX_LEN).c_str(), UID_MAX_LEN);
   } while (strlen(uid) == 0);
   strncpy(user.uid, uid, UID_MAX_LEN);
@@ -190,83 +231,56 @@ void klonk_pw_reset(int id, token_t *rfid_ptr)
 
 
 
-void klonk_print_help()
-{
-  Serial.println("help        List of commands");
-  Serial.println("passwd      Change password");
-  Serial.println("pwgen       Generate random password");
-  Serial.println("passwin     Change windows password");
-  Serial.println("reset       Reset user, password and tag");
-  Serial.println("init        Initialize Klonk");
-  Serial.println();
-  delay(100);
-}
-
-
-
 void handle_serial_input(boolean lock, token_t *rfid_ptr, rfid_tag *tag_ptr)
 {
   String command = read_serial_string();
+  command.trim();
   debug("Got command:");
-  debug(command);
+  debug_v(command);
+  debug("Command length:");
+  debug_v(command.length());
 
-  if (command == 'passwd')
+  if (command == "passwd")
   {
     debug("PASSWD");
-    Serial.println("Changing existing password");
-    Serial.println(" == == == == == == == == == == == == == ");
+
+    PRINT_LN_S("Changing existing password");
+    PRINT_LN_S("==========================");
 
     klonk_chpw(get_user_id(), rfid_ptr);
   }
-  else if (command == 'pwgen')
+  else if (command == "pwgen")
   {
     debug("PWGEN");
   }
-  else if (command == 'passwin')
-  {
-    debug("PASSWIN");
-
-    Keyboard.press(KEY_LEFT_CTRL);
-    Keyboard.press(KEY_LEFT_ALT);
-    Keyboard.press(KEY_DELETE);
-    delay(100);
-    Keyboard.releaseAll();
-    delay(500);
-    ;
-    Keyboard.press(KEY_DOWN_ARROW);
-    delay(100);
-    Keyboard.release(KEY_DOWN_ARROW);
-    delay(100);
-
-    Keyboard.press(KEY_DOWN_ARROW);
-    delay(100);
-    Keyboard.release(KEY_DOWN_ARROW);
-    delay(100);
-
-    Keyboard.press(KEY_DOWN_ARROW);
-    delay(100);
-    Keyboard.release(KEY_DOWN_ARROW);
-    delay(100);
-
-    Keyboard.write(KEY_RETURN);
-  }
-  else if (command == 'reset')
+  else if (command == "reset")
   {
     debug("RESET");
 
     klonk_pw_reset(get_user_id(), rfid_ptr);
   }
-  else if (command == 'init')
+  else if (command == "init")
   {
     debug("INIT");
 
     klonk_init();
     klonk_pw_reset(0, rfid_ptr);
   }
-  else if (command == 'help')
+  else if (command == "lang")
+  {
+    klonk_set_lang();
+  }
+  else if (command == "help")
   {
     debug("HELP");
-    klonk_print_help();
+    PRINT_LN_S("help        List of commands");
+    PRINT_LN_S("passwd      Change password");
+    PRINT_LN_S("pwgen       Generate random password");
+    PRINT_LN_S("reset       Reset user, password and tag");
+    PRINT_LN_S("lang        Set keyboard language");
+    PRINT_LN_S("init        Initialize Klonk");
+    PRINT_LN_S("");
+    delay(100);
   } else {
 
   }

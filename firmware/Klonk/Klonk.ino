@@ -1,4 +1,3 @@
-
 //
 // This sketch pretends to be a keyboard and prints a stored password by pressing a button. Furthermore you can login/logout by registered RFID-Tag.
 // There are 4 commands available to administer the user and password.
@@ -8,16 +7,17 @@
 // Licence: You may use, alternate and re-distribute it as you wish. Use at own risk!
 //
 
+#include "config.h"
+
 #include <Arduino.h>
 #include <SPI.h>
-#include <Keyboard.h>
 #include <EEPROM.h>
 
 #include "Klonk.h"
 #include "usToDE.h"
-#include "config.h"
 #include "serial_ui.h"
 #include "store.h"
+#include "HID-Project.h"
 
 
 
@@ -46,108 +46,104 @@ void set_led(uint8_t red, uint8_t green, uint8_t blue) {
 
 
 
-void send_string_to_keyboard(const char *str)
+void send_string_to_keyboard(const char *str, boolean lang)
 {
-  int i = 0;
-  while ( str[i] )
+  debug("Sending KBD string");
+  debug_v(str);
+
+  for (int i = 0; i < strlen(str); i++)
   {
-    Keyboard.write(usToDE[str[i]]);
+    if (lang)
+    {
+      BootKeyboard.write(str[i]);
+    } else {
+      BootKeyboard.write(pgm_read_byte(usToDE + str[i]));
+    }
   }
 }
 
 
 
-void send_password(user_data *user_ptr)
+void send_password(user_data *user_ptr, boolean lang)
 {
-  send_string_to_keyboard(user_ptr->pwd);
-  Keyboard.write(KEY_RETURN);
+  send_string_to_keyboard(user_ptr->pwd, lang);
+  BootKeyboard.write(KEY_RETURN);
   delay(500);
 }
 
 
 
-void send_user_password(user_data *user_ptr)
+void send_user_password(user_data *user_ptr, boolean lang)
 {
-  send_string_to_keyboard(user_ptr->uid);
+  send_string_to_keyboard(user_ptr->uid, lang);
   delay(500);
 
-  Keyboard.press(KEY_TAB);
+  BootKeyboard.press(KEY_TAB);
   delay(100);
-  Keyboard.release(KEY_TAB);
-  delay(100);
+  BootKeyboard.release(KEY_TAB);
 
-  send_password(user_ptr);
+  send_password(user_ptr, lang);
 }
 
 
 
 void logout()
 {
-  set_led(COLOR_RED);
-
+  return;
   // Press WINDOWS + L
-  Keyboard.press(KEY_LEFT_GUI);
-  Keyboard.press('l');
-  delay(200);
-  Keyboard.releaseAll();
+  BootKeyboard.press(KEY_LEFT_GUI);
+  BootKeyboard.press(KEY_L);
+  delay(100);
+  BootKeyboard.releaseAll();
+  delay(2000);
 }
 
 
 
-void login(user_data *user_ptr)
+void login(user_data *user_ptr, boolean lang)
 {
-  set_led(COLOR_GREEN);
-
+  return;
   // CTRL-ALT-DEL:
-  Keyboard.press(KEY_LEFT_CTRL);
-  Keyboard.press(KEY_LEFT_ALT);
-  Keyboard.press(KEY_DELETE);
+  BootKeyboard.press(KEY_LEFT_CTRL);
+  BootKeyboard.press(KEY_LEFT_ALT);
+  BootKeyboard.press(KEY_DELETE);
   delay(100);
-  Keyboard.releaseAll();
+  BootKeyboard.releaseAll();
   delay(1000);
-  send_password(user_ptr);
+  send_password(user_ptr, lang);
+  delay(2000);
 }
 
 
 
 byte get_button_action()
 {
-  static long startPressed;
-  static long endPressed;
-  static byte buttonState, oldButtonState;
+  unsigned long timeHold;
+  unsigned long startTime = millis();
+  byte          state = NONE;
 
-  int timeHold;
-  int timeStamp = millis();
+  while (digitalRead(BUTTON_PIN) == PRESSED)
+  {
+    timeHold = millis() - startTime;
 
-  if (timeStamp < START_DELAY) {
-    startPressed = 0;
-    endPressed = 0;
-
-    return NONE;
-  }
-
-  if (buttonState != oldButtonState) {
-    if (digitalRead(BUTTON_PIN) == LOW)
+    if (timeHold > 50 && timeHold < LONG_PRESS)
     {
-      startPressed = timeStamp;
+      set_led(COLOR_WHITE);
+      state = SHORT;
+    }
+    else if (timeHold < LANG_PRESS)
+    {
+      set_led(COLOR_LIGHT_BLUE);
+      state = LONG;
     }
     else
     {
-      endPressed = timeStamp;
-      timeHold = endPressed - startPressed;
-
-      if (timeHold >= 50 && timeHold < 500) //short pressed
-      {
-        return SHORT;
-      }
-      else if (timeHold >= 500)              //long pressed
-      {
-        return LONG;
-      }
+      set_led(COLOR_LILA);
+      state = LANG;
     }
   }
 
-  return NONE;
+  return state;
 }
 
 
@@ -163,9 +159,10 @@ void setup()
   set_led(COLOR_WHITE);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
 
-  Keyboard.begin();
+  //  Keyboard.begin();
+  BootKeyboard.begin();
   Serial.begin(9600);
-  Serial.println("klonk - Type \"help\" for available commands");
+  PRINT_LN_S("klonk - Type \"help\" for available commands");
 }
 
 
@@ -180,35 +177,14 @@ void loop()
   static meta_data meta;
   static user_data user;
   static rfid_tag tag;
+  byte   action;
 
-  if (lock == false) {
-    switch (get_button_action())
-    {
-      case SHORT:
-        debug("Send password");
-        send_password(&user);
-        break;
-      case LONG:
-        debug("Send user + password");
-        send_user_password(&user);
-        break;
-      default:
-        break;
-    }
-  }
+  token_init(&rfid);
 
-  if (millis() < 1000) {
-    token_init(&rfid);
+  lock = true;
+  set_led(COLOR_RED);
 
-    //    lock = true;
-    lock = false;
-    load_metadata(&meta);
-    tag = {.bytes = {0}, .len = 0};
-
-    delay(START_DELAY - millis());
-    //    set_led(COLOR_RED);
-    set_led(COLOR_GREEN);
-  }
+  load_metadata(&meta);
 
   if (meta.k_state != STATE_ACTV)
   {
@@ -219,34 +195,84 @@ void loop()
 
     load_metadata(&meta);
   }
-
-  //  // handle serial input
-  //  if (Serial.available() > 0)
-  //  {
-  //    debug("Handling input");
-  //    handle_serial_input(lock, &rfid, &tag);
-  //  }
+  tag = {.bytes = {0}, .len = 0};
 
 
-  //  if (is_tag_available(&rfid))
-  //  {
-  //    get_tag(&rfid, &tag);
-  //
-  //    if (validate_tag(&tag))
-  //    {
-  //      load_user(userNum, &tag, &user);
-  //      lock = !lock;            //toggle status
-  //      if (lock)
-  //      {
-  //        logout();
-  //      }
-  //      else
-  //      {
-  //        login(&user);
-  //      }
-  //
-  //      delay(500);
-  //    }
-  //  }
+  while (1)
+  {
+    action = get_button_action();
+
+    if (lock == false) {
+      if (BootKeyboard.getLeds() & LED_SCROLL_LOCK) {
+        set_led(COLOR_YELLOW);
+        userNum = 1;
+      } else {
+        set_led(COLOR_GREEN);
+        userNum = 0;
+      }
+      switch (action)
+      {
+        case SHORT:
+          debug("P");
+          load_user(userNum, &tag, &user);
+          send_password(&user, meta.lang);
+          break;
+        case LONG:
+          debug("UP");
+          load_user(userNum, &tag, &user);
+          send_user_password(&user, meta.lang);
+          break;
+        case LANG:
+          debug("LANG");
+          meta.lang = ! meta.lang;
+        default:
+          break;
+      }
+    } else {
+      set_led(COLOR_RED);
+    }
+
+    // handle serial input
+    if (Serial.available() > 0)
+    {
+      debug("Handling input");
+
+      handle_serial_input(lock, &rfid, &tag);
+      load_metadata(&meta);
+    }
+
+    if (is_tag_available(&rfid))
+    {
+      debug("Getting TAG");
+      get_tag(&rfid, &tag);
+
+#if (DEBUG > 0)
+      PRINT_LN_S("Got Tag");
+      for (int i = tag.len - 1; i > 0; i--)
+      {
+        PRINT_HEX(tag.bytes[i]);
+      }
+      debug("");
+      debug("END TAG");
+#endif
+
+      if (validate_tag(&tag))
+      {
+        load_user(userNum, &tag, &user);
+        lock = !lock;            //toggle status
+        if (lock)
+        {
+          logout();
+        }
+        else
+        {
+          login(&user, meta.lang);
+        }
+
+        delay(500);
+      } // end if (validate_tag(&tag))
+      delay(500);
+    }
+  } // end WHILE
 }
 

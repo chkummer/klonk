@@ -2,11 +2,12 @@
 #include <EEPROM.h>
 #include <FastCRC.h>
 
+#include "serial_ui.h"
 #include "store.h"
 
 
 
-boolean eeprom_is_addr_ok(int addr) 
+boolean eeprom_is_addr_ok(int addr)
 {
   return ((addr >= EEPROM.begin()) && (addr < EEPROM.end()));
 }
@@ -26,7 +27,10 @@ uint32_t get_user_crc32(const user_data *user_ptr)
 boolean validate_tag(rfid_tag *tag_ptr)
 {
   user_data  user;
-  
+
+  debug_v(user.uid);
+  debug_v(user.pwd);
+
   load_user(0, tag_ptr, &user);
   if (user.sum == get_user_crc32(&user))
   {
@@ -38,21 +42,27 @@ boolean validate_tag(rfid_tag *tag_ptr)
 
 
 
-void encrypt(user_data *user_ptr, const rfid_tag *tag_ptr) 
+void get_iv(const rfid_tag *tag_ptr, byte *iv_ptr)
 {
   FastCRC32 crc;
-  byte *data = (byte *) user_ptr;
-  int len = sizeof(*user_ptr);
-  byte iv[10];
 
-  // initialize IV
   randomSeed(crc.cksum(tag_ptr->bytes, tag_ptr->len));
-  for(int i = 0; i < 10; i++)
+  for (int i = 0; i < 10; i++)
   {
-    iv[i] = random(255);
+    iv_ptr[i] = random(255);
   }
+}
 
-  for(int i = 0; i < len; i++)
+
+
+void encrypt(user_data *user_ptr, const rfid_tag *tag_ptr)
+{
+  byte *data = (byte *) user_ptr;
+  byte iv[TAG_LEN];
+
+  get_iv(tag_ptr, iv);
+
+  for (int i = 0; i < sizeof(*user_ptr); i++)
   {
     byte salt = (i < tag_ptr->len) ? iv[i] : data[i - tag_ptr->len];
     data[i] = data[i] ^ tag_ptr->bytes[i % tag_ptr->len] ^ salt;
@@ -61,16 +71,27 @@ void encrypt(user_data *user_ptr, const rfid_tag *tag_ptr)
 
 
 
-void decrypt(user_data *user_ptr, const rfid_tag *tag_ptr) 
+void decrypt(user_data *user_ptr, const rfid_tag *tag_ptr)
 {
-  encrypt(user_ptr, tag_ptr);
+  byte *data = (byte *) user_ptr;
+  byte iv[TAG_LEN];
+  byte cipher_blk[TAG_LEN];
+
+  get_iv(tag_ptr, iv);
+
+  for (int i = 0; i < sizeof(*user_ptr); i++)
+  {
+    byte salt = (i < tag_ptr->len) ? iv[i] : cipher_blk[i % tag_ptr->len];
+    cipher_blk[i % tag_ptr->len] = data[i];
+    data[i] = data[i] ^ tag_ptr->bytes[i % tag_ptr->len] ^ salt;
+  }
 }
 
 
 
 void store_metadata(const meta_data *meta_ptr)
 {
-  EEPROM.put(0, *meta_ptr);  
+  EEPROM.put(0, *meta_ptr);
 }
 
 
@@ -95,7 +116,7 @@ boolean load_user(int id, const rfid_tag *tag_ptr, user_data *user_ptr)
       return true;
     }
   }
-  
+
   return false;
 }
 

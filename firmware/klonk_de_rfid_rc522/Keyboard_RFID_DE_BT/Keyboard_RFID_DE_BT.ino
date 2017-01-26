@@ -17,7 +17,8 @@
 
 #define SDA_PIN 2
 #define RST_PIN 3
-#define OLED 5
+//#define OLED 5 // klonk breadboard
+#define OLED 18 // klonk PCB
 #define NUMPIXELS 1
 
 MFRC522 mfrc522(SDA_PIN, RST_PIN);
@@ -172,7 +173,7 @@ boolean chgPW ()
   newPWD = "123456789012345618901";
   while ( newPWD.length() > 20 )
   {
-    Serial.println("Pleae enter new password: ");
+    Serial.println("Please enter new password: ");
     newPWD = readSerialStrg();
     if ( newPWD.length() > 20 )
     {
@@ -181,7 +182,7 @@ boolean chgPW ()
     }
   }
     
-  Serial.println("Pleae enter new password again: ");
+  Serial.println("Please enter new password again: ");
   cmpPWD = readSerialStrg();
 
   if (newPWD == cmpPWD)
@@ -190,7 +191,7 @@ boolean chgPW ()
     PW = saveStrgEEP(newPWD,PosPW);
     Serial.print("New password ");
     Serial.print(newPWD);
-    Serial.println(" is saved\n");
+    Serial.println(" is saved - please test before use\n");
     return true;
   }
   else
@@ -213,19 +214,22 @@ void prtKbdStrg(String tmpStrg)
 
 void stat_led_red()
 {
-  pixels.setPixelColor(0, pixels.Color(0, 25, 0));
+  //pixels.setPixelColor(0, pixels.Color(0, 25, 0)); //RGB APA-106, F8
+  pixels.setPixelColor(0, pixels.Color(25, 0, 0)); //RGB APA-106, F5
   pixels.show();
 }
 
 void stat_led_orange()
 {
-  pixels.setPixelColor(0, pixels.Color(35, 75, 0));
+  //pixels.setPixelColor(0, pixels.Color(35, 75, 0)); //RGB-APA 106, F8
+  pixels.setPixelColor(0, pixels.Color(75, 35, 0)); //RGB APA-106, F5
   pixels.show();
 }
 
 void stat_led_green()
 {
-  pixels.setPixelColor(0, pixels.Color(25, 0, 0));
+  //pixels.setPixelColor(0, pixels.Color(25, 0, 0)); //RGB APA-106, F8
+  pixels.setPixelColor(0, pixels.Color(0, 25, 0)); //RGB APA-106, F5
   pixels.show();
 }
 
@@ -379,7 +383,7 @@ void loop()
     digitalWrite(buttonSel, HIGH);
     delay(500);
   }
-  
+
   buttonState = digitalRead(buttonPin);
   if (buttonState != lastButtonState) 
   {
@@ -455,7 +459,7 @@ void loop()
     }
 
     Serial.println("Generate random password");
-    Serial.println("==========================");
+    Serial.println("========================");
     Serial.print("Generated password: ");
     Serial.println(randPW);
     Serial.println("Replace old password and save it? <y/n>");
@@ -510,7 +514,7 @@ void loop()
     }
     else
     {
-      Serial.println("Wrong password - reset not started\n");
+      Serial.println("Wrong password - reset not started, please try again\n");
     }
   }
 
@@ -558,12 +562,12 @@ void loop()
     Serial.println("Init sequence started");
     Serial.println("=====================");
     setUSER(50,"login");
-    PosPW = 0;    
+    PosPW = 0;
         
     if ( chgPW() == true)
     {
       delay(1000);
-      Serial.println("Hold your RFID-Tag close to RFID-Receiver to register...");
+      Serial.println("Hold your RFID-Tag close to RFID-Receiver for at least one second to register...");
 
       i = 0;
       while ( i == 0 )
@@ -595,8 +599,8 @@ void loop()
       Serial.print("Registered TAG: ");
       Serial.println(myTAG);
       Serial.println();
-      Serial.println("Init seq. done - your user and passwd are set and RFID-TAG is registered.\n");
-      
+      Serial.println("Init seq. done - your login user and passwd are set and RFID-TAG is registered.\n");
+
       Serial.println("Set 2nd user? <y/n>");
       replySave = readSerialStrg();
         
@@ -614,6 +618,7 @@ void loop()
 
       stat_led_green();
       def_USER();
+      Serial.println("Type 'help' for admin commands\n");
       delay(1300);
     }
     else
@@ -642,7 +647,6 @@ void loop()
 
   if ( entryTAG == myTAG )
   {
-     
     if ( LOCK == 1) 
     { 
       LOCK = 0; 

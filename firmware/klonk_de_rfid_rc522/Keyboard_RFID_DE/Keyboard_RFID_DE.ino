@@ -19,6 +19,7 @@
 //#define OLED 5 // klonk breadboard
 #define OLED 18 // klonk PCB
 #define NUMPIXELS 1
+
 MFRC522 mfrc522(SDA_PIN, RST_PIN);
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, OLED, NEO_GRB + NEO_KHZ800);
 
@@ -234,6 +235,19 @@ void stat_led_blue()
   pixels.show();
 }
 
+void show_user_led ()
+{
+  switch (PosPW)
+  {
+    case 0:
+      stat_led_green();
+      break;
+    case 75:
+      stat_led_orange();
+      break;
+  }
+}
+
 void logout()
 {
   stat_led_red();
@@ -277,13 +291,13 @@ void setup()
   digitalWrite(buttonSel, HIGH);
 
   stat_led_red();
-  
+
   Keyboard.begin();
   Serial.begin(9600);
   Serial.println("klonk - Type \"help\" for available commands");
-    
+
   randomSeed(analogRead(0));
-  
+
   eeprom_read_string(PosTAG, buf, BUFSIZE);
   myTAG = buf;
   def_USER();
@@ -294,17 +308,17 @@ void loop()
 
   if ( digitalRead(buttonSel) == LOW && myUSER != "FFFFFFFFFFFFFFFFFFFF" && LOCK == 0 )
   {
-    if ( PosPW == 0)
+    switch (PosPW)
     {
-      PosPW = 75;
-      PosUSER = 125;
-      stat_led_orange();
-    }
-    else
-    {
-      PosPW = 0;
-      PosUSER = 50;
-      stat_led_green();
+      case 0:
+        PosPW = 75;
+        PosUSER = 125;
+        stat_led_orange();
+        break;
+      case 75:
+        PosPW = 0;
+        PosUSER = 50;
+        stat_led_green();
     }
     
     eeprom_read_string(PosPW, buf, BUFSIZE);
@@ -315,7 +329,7 @@ void loop()
     digitalWrite(buttonSel, HIGH);
     delay(500);
   }
-  
+
   buttonState = digitalRead(buttonPin);
   if (buttonState != lastButtonState) 
   {
@@ -391,7 +405,7 @@ void loop()
     }
 
     Serial.println("Generate random password");
-    Serial.println("==========================");
+    Serial.println("========================");
     Serial.print("Generated password: ");
     Serial.println(randPW);
     Serial.println("Replace old password and save it? <y/n>");

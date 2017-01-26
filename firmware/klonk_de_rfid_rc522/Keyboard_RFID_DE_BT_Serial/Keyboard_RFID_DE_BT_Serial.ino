@@ -17,7 +17,8 @@
 
 #define SDA_PIN 2
 #define RST_PIN 3
-#define OLED 5
+//#define OLED 5 // klonk breadboard
+#define OLED 18 // klonk PCB
 #define NUMPIXELS 1
 
 MFRC522 mfrc522(SDA_PIN, RST_PIN);
@@ -381,7 +382,7 @@ void loop()
     digitalWrite(buttonSel, HIGH);
     delay(500);
   }
-  
+
   buttonState = digitalRead(buttonPin);
   if (buttonState != lastButtonState) 
   {

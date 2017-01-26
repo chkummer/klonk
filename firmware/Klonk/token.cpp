@@ -18,17 +18,17 @@ void token_init(token_t *token_ptr)
 
 
 
-void get_tag(token_t *rfid_ptr, rfid_tag *tag_ptr)
+boolean get_tag(token_t *rfid_ptr, rfid_tag *tag_ptr)
 {
-  tag_ptr->len = rfid_ptr->uid.size;
-  strncpy(tag_ptr->bytes, rfid_ptr->uid.uidByte, TAG_LEN);
-}
+  if (rfid_ptr->PICC_IsNewCardPresent() && rfid_ptr->PICC_ReadCardSerial())
+  {
+    tag_ptr->len = rfid_ptr->uid.size;
+    strncpy(tag_ptr->bytes, rfid_ptr->uid.uidByte, TAG_LEN);
 
+    return true;
+  }
 
-
-boolean is_tag_available(token_t *rfid_ptr)
-{
-  return (rfid_ptr->PICC_IsNewCardPresent() && rfid_ptr->PICC_ReadCardSerial());
+  return false;
 }
 #endif //(TOKEN MFRC522)
 
@@ -39,9 +39,6 @@ boolean is_tag_available(token_t *rfid_ptr)
  */
 
 #if (RFID_PN532 > 0)
-uint8_t tag_bytes[TAG_LEN];
-uint8_t tag_len;
-
 void token_init(token_t *token_ptr)
 {
   token_ptr->begin();
@@ -56,19 +53,23 @@ void token_init(token_t *token_ptr)
 
 
 
-void get_tag(token_t *rfid_ptr, rfid_tag *tag_ptr)
+boolean get_tag(token_t *rfid_ptr, rfid_tag *tag_ptr)
 {
-  tag_ptr->len = tag_len;
-  strncpy(tag_ptr->bytes, tag_bytes, TAG_LEN);
+  uint8_t tag_bytes[TAG_LEN];
+  uint8_t tag_len;
+
+  if (rfid_ptr->readPassiveTargetID(PN532_MIFARE_ISO14443A, tag_bytes, &tag_len, 100))
+  {
+    tag_ptr->len = tag_len;
+    strncpy(tag_ptr->bytes, tag_bytes, TAG_LEN);
+
+    return true;
+  }
+
+  return false;
 }
-
-
-boolean is_tag_available(token_t *rfid_ptr)
-{
-  return rfid_ptr->readPassiveTargetID(PN532_MIFARE_ISO14443A, tag_bytes, &tag_len, 100);
-}
-
 #endif //(TOKEN PN532)
+
 
 
 /*
@@ -80,11 +81,10 @@ void wait_for_tag(token_t *rfid_ptr, rfid_tag *tag_ptr)
   set_led(COLOR_BLUE);
 
   PRINT_LN_S("Please register tag:");
-  while (! is_tag_available(rfid_ptr))
+  while (! get_tag(rfid_ptr, tag_ptr))
   {
     delay(100);
   }
-  get_tag(rfid_ptr, tag_ptr);
 
   PRINT_LN_S("Got Tag");
   for (int i = tag_ptr->len - 1; i > 0; i--)

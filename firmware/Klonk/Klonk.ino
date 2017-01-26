@@ -85,7 +85,8 @@ void send_user_password(user_data *user_ptr, boolean lang)
 
 void logout()
 {
-  return;
+  set_led(COLOR_RED);
+
   // Press WINDOWS + L
   BootKeyboard.press(KEY_LEFT_GUI);
   BootKeyboard.press(KEY_L);
@@ -98,7 +99,8 @@ void logout()
 
 void login(user_data *user_ptr, boolean lang)
 {
-  return;
+  set_led(COLOR_GREEN);
+
   // CTRL-ALT-DEL:
   BootKeyboard.press(KEY_LEFT_CTRL);
   BootKeyboard.press(KEY_LEFT_ALT);
@@ -235,10 +237,9 @@ void loop()
       load_metadata(&meta);
     }
 
-    if (is_tag_available(&rfid))
+    if (get_tag(&rfid, &tag))
     {
       debug("Getting TAG");
-      get_tag(&rfid, &tag);
 
 #if (DEBUG > 0)
       PRINT_LN_S("Got Tag");

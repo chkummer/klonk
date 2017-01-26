@@ -40,12 +40,9 @@ struct rfid_tag {
 };
 
 
-void token_init(token_t *token_ptr);
-
-boolean is_tag_available(token_t *rfid_ptr);
-
-void get_tag(token_t *rfid_ptr, rfid_tag *tag_ptr);
-void wait_for_tag(token_t *rfid_ptr, rfid_tag *tag_ptr);
+void    token_init(token_t *token_ptr);
+boolean get_tag(token_t *rfid_ptr, rfid_tag *tag_ptr);
+void    wait_for_tag(token_t *rfid_ptr, rfid_tag *tag_ptr);
 
 
 #endif

@@ -87,10 +87,11 @@ void wait_for_tag(token_t *rfid_ptr, rfid_tag *tag_ptr)
   }
 
   PRINT_LN_S("Got Tag");
-  for (int i = tag_ptr->len - 1; i > 0; i--)
+  for (int i = 0; i < tag_ptr->len; i++)
   {
     PRINT_HEX(tag_ptr->bytes[i]);
   }
+  PRINT_LN_S("");
   debug("END TAG");
 
   set_led(COLOR_GREEN);

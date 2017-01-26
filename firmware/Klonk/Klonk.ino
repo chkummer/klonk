@@ -243,10 +243,11 @@ void loop()
 
 #if (DEBUG > 0)
       PRINT_LN_S("Got Tag");
-      for (int i = tag.len - 1; i > 0; i--)
+      for (int i = 0; i < tag_ptr->len; i++)
       {
         PRINT_HEX(tag.bytes[i]);
       }
+      PRINT_LN_S("");
       debug("");
       debug("END TAG");
 #endif

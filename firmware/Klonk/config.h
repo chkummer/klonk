@@ -5,7 +5,9 @@
 
 #define BOARD 1         // Possible values 1=BCP, 2=breadboard
 #define LED   5         // LED Type: 5=RGB APA-106, F5;  8=RGB APA-106, F8
-#define TOKEN MFRC522
+
+#define RFID_MFRC522 1
+//#define RFID_PN532   1
 
 #define PWD_MAX_LEN 20
 #define UID_MAX_LEN 10

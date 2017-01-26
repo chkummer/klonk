@@ -2,16 +2,12 @@
 // This sketch pretends to be a keyboard and prints a stored password by pressing a button. Furthermore you can login/logout by registered RFID-Tag.
 // There are 4 commands available to administer the user and password.
 //
-// Author: Ming-Che Lee <ming-che.lee@gmx.ch
+// Author: Ming-Che Lee <ming-che.lee@gmx.ch>
 //
 // Licence: You may use, alternate and re-distribute it as you wish. Use at own risk!
 //
 
 #include "config.h"
-
-#include <Arduino.h>
-#include <SPI.h>
-#include <EEPROM.h>
 
 #include "Klonk.h"
 #include "usToDE.h"
@@ -153,8 +149,6 @@ byte get_button_action()
 */
 void setup()
 {
-  SPI.begin();
-
   led_init();
   set_led(COLOR_WHITE);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -171,13 +165,13 @@ void setup()
 */
 void loop()
 {
-  static byte     userNum;
-  static boolean  lock;
-  static token_t  rfid;
+  static byte      userNum;
+  static boolean   lock;
+  static token_t   rfid = TOKEN_INIT;
   static meta_data meta;
   static user_data user;
-  static rfid_tag tag;
-  byte   action;
+  static rfid_tag  tag;
+  byte             action;
 
   token_init(&rfid);
 
